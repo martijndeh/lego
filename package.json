@@ -1,0 +1,39 @@
+{
+  "name": "lego",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "babel": "babel src -d lib",
+    "coverage": "jscoverage lib lib-cov && NODE_COV=1 NODE_ENV=test mocha ./test/*.js -R html-cov > coverage.html && rm -rf lib-cov",
+    "test": "NODE_ENV=test mocha -g '^' --reporter spec ./test/*.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/martijndeh/lego.git"
+  },
+  "author": "Martijn de Haan",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/martijndeh/lego/issues"
+  },
+  "homepage": "https://github.com/martijndeh/lego#readme",
+  "devDependencies": {
+    "babel": "^6.3.26",
+    "babel-cli": "^6.3.17",
+    "babel-preset-es2015": "^6.3.13",
+    "blanket": "^1.2.1",
+    "coveralls": "^2.11.6",
+    "jscoverage": "^0.6.0",
+    "mocha": "^2.3.4",
+    "mocha-lcov-reporter": "^1.0.0"
+  },
+  "dependencies": {
+    "pg": "^4.4.3"
+  },
+  "babel": {
+    "presets": [
+      "es2015"
+    ]
+  }
+}

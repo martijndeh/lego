@@ -1,0 +1,9 @@
+{
+	"esnext": true,
+	"undef": true,
+	"unused": true,
+	"node": true,
+	"mocha": true,
+	"predef": [  ],
+	"-W030": false
+}
