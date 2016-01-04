@@ -2,6 +2,10 @@
 
 A lightweight SQL (string) builder using ES6 template strings.
 
+```
+npm install lego-sql --save
+```
+
 Lego embraces SQL instead of adding yet another abstraction layer. Currently,
 only PostgreSQL is supported. Feel free to send pull requests! :-)
 
