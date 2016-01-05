@@ -149,7 +149,7 @@ exports = module.exports = {
 				direction = 'down';
 
 				for(let i = from - to; i > 0; i--) {
-					let version = from + i - 1;
+					let version = to + i;
 					versions.push(version);
 				}
 			}

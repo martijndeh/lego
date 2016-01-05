@@ -132,15 +132,42 @@ describe('migrations', function() {
 	describe('going up', function() {
 		beforeEach(function() {
 			sandbox.stub(Lego.Migrations, 'loadMigration', function(version) {
-				return {
-					up: function(lego, queue) {
-						queue.add `CREATE TABLE tests (name TEXT, value INTEGER)`;
-					},
+				if(version === 1) {
+					return {
+						up: function(lego, queue) {
+							queue.add `CREATE TABLE tests (name TEXT, value INTEGER)`;
+						},
 
-					down: function(lego, queue) {
-						queue.add `DROP TABLE tests`;
-					}
-				};
+						down: function(lego, queue) {
+							queue.add `DROP TABLE tests`;
+						}
+					};
+				}
+				else if(version === 2) {
+					return {
+						up: function(lego, queue) {
+							let name = 'Martijn';
+							let value = 654;
+
+							queue.add `INSERT INTO tests (name, value) VALUES (${name}, ${value})`;
+						},
+
+						down: function(lego, queue) {
+							queue.add `DELETE FROM tests WHERE value = 654`;
+						}
+					};
+				}
+				else if(version === 3) {
+					return {
+						up: function() {
+							//
+						},
+
+						down: function() {
+							//
+						}
+					};
+				}
 			});
 		});
 
@@ -171,6 +198,46 @@ describe('migrations', function() {
 			return Lego.Migrations.migrate(0, 1)
 				.then(function() {
 					return Lego.Migrations.migrate(1, 0);
+				})
+				.then(function() {
+					return Lego.Migrations.getDatabaseVersion();
+				})
+				.then(function(databaseVersion) {
+					assert.equal(databaseVersion, 0);
+				})
+				.then(function() {
+					return Lego.new `SELECT * FROM tests`;
+				})
+				.then(assert.fail)
+				.catch(function(error) {
+					assert.equal(error.code, '42P01');
+				});
+		});
+
+		it('empty to 2 to empty', function() {
+			return Lego.Migrations.migrate(0, 2)
+				.then(function() {
+					return Lego.Migrations.migrate(2, 0);
+				})
+				.then(function() {
+					return Lego.Migrations.getDatabaseVersion();
+				})
+				.then(function(databaseVersion) {
+					assert.equal(databaseVersion, 0);
+				})
+				.then(function() {
+					return Lego.new `SELECT * FROM tests`;
+				})
+				.then(assert.fail)
+				.catch(function(error) {
+					assert.equal(error.code, '42P01');
+				});
+		});
+
+		it('empty to 3 to empty', function() {
+			return Lego.Migrations.migrate(0, 3)
+				.then(function() {
+					return Lego.Migrations.migrate(3, 0);
 				})
 				.then(function() {
 					return Lego.Migrations.getDatabaseVersion();
