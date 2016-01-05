@@ -1,5 +1,3 @@
-process.env.DATABASE_URL = 'postgres://localhost';
-
 const Lego = require('..');
 const assert = require('assert');
 

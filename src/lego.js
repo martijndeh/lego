@@ -3,10 +3,22 @@
 const DATABASE_URL = process.env.DATABASE_URL;
 const Driver = require('./driver')(DATABASE_URL);
 
+function createLegoInstance(strings) {
+	var lego = new LegoInstance();
+
+	if(strings) {
+		var args = [].slice.call(arguments, 0);
+		lego.add.apply(lego, args);
+	}
+
+	return lego;
+}
+
 class LegoInstance {
 	constructor() {
 		this._strings = [];
 		this._parameters = [];
+		this._transaction = null;
 	}
 
 	add(stringsOrOtherLegoInstance, ...parameters) {
@@ -45,6 +57,10 @@ class LegoInstance {
 		return this.exec().then(callback, errback);
 	}
 
+	catch(errback) {
+		return this.exec().catch(errback);
+	}
+
 	toQuery() {
 		let index = 1;
 		let parameters = this._parameters;
@@ -74,24 +90,83 @@ class LegoInstance {
 	exec() {
 		let query = this.toQuery();
 
-		return Driver.query(query.text, query.parameters);
+		if(this._transaction) {
+			return Driver.query(this._transaction, query.text, query.parameters);
+		}
+		else {
+			return Driver.exec(query.text, query.parameters);
+		}
 	}
-}
 
-var Lego = {
-	new: function(strings) {
+	transacting(transaction) {
+		this._transaction = transaction;
+		return this;
+	}
+
+	transaction(callback) {
 		var lego = new LegoInstance();
+		return Driver.beginTransaction()
+			.then(function(driver) {
+				lego.transacting(driver.client);
 
-		if(strings) {
-			var args = [].slice.call(arguments, 0);
-			lego.add.apply(lego, args);
+				var returnValue = callback(lego);
+
+				if(!returnValue || !returnValue.then) {
+					return Driver.rollbackTransaction(driver.client)
+						.then(function() {
+							driver.done();
+
+							throw new Error('In Lego#transaction(..) you must return a Promise.');
+						});
+				}
+				else {
+					return returnValue
+						.then(function(result) {
+							return Driver.commitTransaction(driver.client)
+								.then(function() {
+									driver.done();
+									lego.transacting(null);
+
+									return result;
+								});
+						})
+						.catch(function(error) {
+							// Some thing failed. Uh-oh.
+							return Driver.rollbackTransaction(driver.client)
+								.then(function() {
+									driver.done();
+									lego.transacting(null);
+									throw error;
+								})
+								.catch(function(error) {
+									driver.done(error);
+									lego.transacting(null);
+									throw error;
+								});
+						});
+				}
+			});
+	}
+
+	'new'() {
+		var args = [].slice.call(arguments, 0);
+		var lego = createLegoInstance.apply(null, args);
+
+		if(this._transaction) {
+			lego.transacting(this._transaction);
 		}
 
 		return lego;
-	},
+	}
+}
 
-	Driver: require('./driver'),
-	LegoInstance: LegoInstance
-};
+var Lego = LegoInstance;
+Lego.new = createLegoInstance;
+Lego.transaction = LegoInstance.prototype.transaction;
+
+Lego.Driver 		= require('./driver');
+Lego.DriverInstance = Driver;
+Lego.LegoInstance 	= LegoInstance;
+Lego.Migrations 	= require('./migrations')(Lego);
 
 exports = module.exports = Lego;

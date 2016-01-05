@@ -1,4 +1,6 @@
 # Lego.js
+[![Build Status](https://travis-ci.org/martijndeh/lego.svg?branch=master)](https://travis-ci.org/martijndeh/lego)
+[![License Badge](https://img.shields.io/github/license/martijndeh/lego.svg)](https://github.com/martijndeh/lego/blob/master/LICENSE)
 
 A lightweight SQL (string) builder using ES6 template strings.
 
@@ -6,12 +8,14 @@ A lightweight SQL (string) builder using ES6 template strings.
 npm install lego-sql --save
 ```
 
-Lego embraces SQL instead of adding yet another abstraction layer. Currently,
+Lego embraces SQL instead of adding yet another abstraction layer. It supports client pooling (using pg), transactions and migrations including a cli. Currently,
 only PostgreSQL is supported. Feel free to send pull requests! :-)
 
 ```js
 Lego.new `SELECT * FROM users WHERE name = ${name}`;
 ```
+
+## Quick start
 
 Lego uses ES6 template strings. From the template string, a parameterized
 query is created and passed to the driver. This takes care of sanitizing
@@ -78,10 +82,51 @@ Lego.new `SELECT
 ```
 (I'm not too sure about the indentation best practices when writing multi-line SQL strings though.)
 
-JSHint W030 is disabled. This was causing an error in `lego.add ..` syntax.
+## Transactions
 
-# Roadmap
-- Add more dialects.
-- Should we add something like pool2 for the connection pooling?
-- Add additional methods like `.pluck`?
-- Create a CLI (a separate project?) to run migrations.
+Transactions are also supported. In the `callback` make sure to return a promise. Based on it being fulfilled or rejected the transaction will, respectively, be commited or rolled back.
+
+```js
+Lego.transaction(function(lego) {
+	return lego.new `UPDATE money SET value = value + 100`
+		.then(function() {
+			return lego.new `UPDATE money SET value = value - 100`;
+		});
+});
+```
+
+## Migrations
+
+To create a migration you can simply invoke `lego migrate:make`. This creates an empty migration with an `up` and a `down` method.
+
+Migrations come with a queue so you can easily execute multiple queries (if you're not interested in their return values).
+
+```js
+exports = module.exports = {
+	up: function(lego, queue) {
+		queue.add `CREATE TABLE tests (name TEXT UNIQUE, value INTEGER)`;
+		queue.add `INSERT INTO tests VALUES ('Martijn', 123)`;
+	},
+
+	down: function(lego, queue) {
+		queue.add `DROP TABLE tests`;
+	}
+};
+```
+
+Lego creates a table to keep track of all the migrations. This migrations table is created in it's own schema, so don't worry about any collisions (unless you are using the lego schema).
+
+## CLI
+
+The command line interface supports the following commands:
+
+```
+migrate:make                    Creates a new migration file.
+migrate:latest                  Migrates to the latest migration.
+migrate:rollback                Rolls back the previous migration.
+migrate:<version>               Migrates or rolls back to the target migration <version>.
+```
+
+### Final note
+
+JSHint W030 is disabled. This was causing an error in `lego.add ..` syntax.

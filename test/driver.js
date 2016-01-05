@@ -1,5 +1,3 @@
-process.env.DATABASE_URL = 'postgres://localhost';
-
 const Lego = require('..');
 const assert = require('assert');
 
@@ -49,7 +47,7 @@ describe('query', function() {
 
 	it('connect error', function() {
 		var driver = Lego.Driver('postgres://localhost:1337');
-		driver.query('SELECT 1', [])
+		driver.connect()
 			.then(assert.fail)
 			.catch(function(error) {
 				assert.equal(error.message, 'connect ECONNREFUSED 127.0.0.1:1337');

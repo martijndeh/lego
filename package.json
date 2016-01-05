@@ -1,12 +1,13 @@
 {
   "name": "lego-sql",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A lightweight SQL (string) builder using ES6 template strings. Lego embraces SQL instead of adding yet another abstraction layer.",
   "main": "index.js",
   "scripts": {
     "babel": "babel src -d lib",
-    "coverage": "jscoverage lib lib-cov && NODE_COV=1 NODE_ENV=test mocha ./test/*.js -R html-cov > coverage.html && rm -rf lib-cov",
-    "test": "NODE_ENV=test mocha -g '^' --reporter spec ./test/*.js"
+    "coverage": "jscoverage lib lib-cov && NODE_COV=1 NODE_ENV=test mocha ./test/*.js -R mocha-lcov-reporter > ./coverage.lcov && rm -rf lib-cov",
+    "test": "NODE_ENV=test mocha -g '^' --reporter spec ./test/*.js",
+    "coveralls": "cat ./coverage.lcov | ./node_modules/coveralls/bin/coveralls.js"
   },
   "repository": {
     "type": "git",
@@ -17,6 +18,9 @@
   "bugs": {
     "url": "https://github.com/martijndeh/lego/issues"
   },
+  "bin": {
+    "lego": "lib/bin/cli.js"
+  },
   "homepage": "https://github.com/martijndeh/lego#readme",
   "devDependencies": {
     "babel": "^6.3.26",
@@ -26,17 +30,21 @@
     "coveralls": "^2.11.6",
     "jscoverage": "^0.6.0",
     "mocha": "^2.3.4",
-    "mocha-lcov-reporter": "^1.0.0"
+    "mocha-lcov-reporter": "^1.0.0",
+    "sinon": "^1.17.2"
   },
   "keywords": [
-      "lego",
-      "sql",
-      "postgres",
-      "knex",
-      "sql builder",
-      "template strings"
+    "lego",
+    "sql",
+    "postgres",
+    "knex",
+    "sql builder",
+    "template strings"
   ],
   "dependencies": {
+    "debug": "^2.2.0",
+    "dotenv": "^1.2.0",
+    "minimist": "^1.2.0",
     "pg": "^4.4.3"
   },
   "babel": {

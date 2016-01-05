@@ -13,7 +13,7 @@ function DriverFactory(databaseURL) {
 	switch(parse.protocol) {
 		case 'pg:':
 		case 'postgres:':
-			driverClass = require('./postgres');
+			driverClass = DriverFactory.Postgres;
 			break;
 	}
 
