@@ -1,6 +1,6 @@
 # Lego.js
 [![Build Status](https://travis-ci.org/martijndeh/lego.svg?branch=master)](https://travis-ci.org/martijndeh/lego)
-[![License Badge](https://img.shields.io/github/license/martijndeh/lego.svg)](https://github.com/martijndeh/lego/blob/master/LICENSE)
+[![Coverage Status](https://coveralls.io/repos/martijndeh/lego/badge.svg?branch=master)](https://coveralls.io/r/martijndeh/lego?branch=master)
 
 A lightweight SQL (string) builder using ES6 template strings.
 
