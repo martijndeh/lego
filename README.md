@@ -82,6 +82,8 @@ Lego.new `SELECT
 ```
 (I'm not too sure about the indentation best practices when writing multi-line SQL strings though.)
 
+In `DELETE`, `UPDATE` and `INSERT` queries, when not using a `RETURNING` clause, the number of affected rows is resolved. Otherwise, the rows are resolved.
+
 ## Transactions
 
 Transactions are also supported. In the `callback` make sure to return a promise. Based on it being fulfilled or rejected the transaction will, respectively, be commited or rolled back.
@@ -126,6 +128,12 @@ migrate:latest                  Migrates to the latest migration.
 migrate:rollback                Rolls back the previous migration.
 migrate:<version>               Migrates or rolls back to the target migration <version>.
 ```
+
+### Roadmap
+
+- Implement additional drivers (mysql, etc).
+- Add a seeds feature similar to the migrations.
+- Extend the public API e.g. add `Lego#pluck`.
 
 ### Final note
 

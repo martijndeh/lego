@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "babel": "babel src -d lib",
-    "coverage": "jscoverage lib lib-cov && NODE_COV=1 NODE_ENV=test mocha ./test/*.js -R mocha-lcov-reporter > ./coverage.lcov && rm -rf lib-cov",
+    "coverage-html": "jscoverage lib lib-cov && NODE_COV=1 NODE_ENV=test mocha ./test/*.js -R html-cov > coverage.html && rm -rf lib-cov",
+    "coverage": "jscoverage lib lib-cov && NODE_COV=1 NODE_ENV=test mocha ./test/*.js -R mocha-lcov-reporter > coverage.lcov && rm -rf lib-cov",
     "test": "NODE_ENV=test mocha -g '^' --reporter spec ./test/*.js",
     "coveralls": "cat ./coverage.lcov | ./node_modules/coveralls/bin/coveralls.js"
   },

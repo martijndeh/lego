@@ -36,7 +36,12 @@ exports = module.exports = class PostgresDriver {
 					reject(error);
 				}
 				else {
-					resolve(result.rows);
+					if((result.oid === 0 || isNaN(result.oid) || result.oid === null) && result.fields.length === 0) {
+						resolve(result.rowCount);
+					}
+					else {
+						resolve(result.rows);
+					}
 				}
 			});
 		});
