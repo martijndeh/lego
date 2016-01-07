@@ -101,7 +101,7 @@ Lego.transaction(function(lego) {
 
 To create a migration you can simply invoke `lego migrate:make`. This creates an empty migration with an `up` and a `down` method.
 
-Migrations come with a queue so you can easily execute multiple queries (if you're not interested in their return values).
+Migrations come with a queue so you can easily execute multiple queries (if you're not interested in their return values). The queries are executed in sequential order (and not in parallel).
 
 ```js
 exports = module.exports = {
@@ -123,10 +123,10 @@ Lego creates a table to keep track of all the migrations. This migrations table 
 The command line interface supports the following commands:
 
 ```
-migrate:make                    Creates a new migration file.
-migrate:latest                  Migrates to the latest migration.
-migrate:rollback                Rolls back the previous migration.
-migrate:<version>               Migrates or rolls back to the target migration <version>.
+lego migrate:make                    Creates a new migration file.
+lego migrate:latest                  Migrates to the latest migration.
+lego migrate:rollback                Rolls back the previous migration.
+lego migrate:<version>               Migrates or rolls back to the target migration <version>.
 ```
 
 ### Roadmap
