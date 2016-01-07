@@ -127,7 +127,35 @@ if(argv._.length) {
 				// Done!
 			})
 			.catch(function(error) {
-				console.log(error);
+				if(error.code === '42601') {
+					console.log('');
+					console.log('Error: ' + error.message);
+					console.log('');
+
+					var lines = error.query.split('\n');
+					var errorPosition = parseInt(error.position);
+
+					var pos = 0;
+
+					for(let i = 0, il = lines.length; i < il; i++) {
+						let numberOfTabs = (lines[i].match(/\t/g) || []).length;
+						let lineLength = lines[i].length + 1;
+
+						let line = lines[i].replace(/\t/g, '    ');
+
+						console.log(chalk.bgRed(line));
+
+						if(errorPosition > pos && errorPosition < pos + lineLength) {
+							var left = (errorPosition - pos);
+							console.log(_space(left + numberOfTabs * 3 - 1) + '^');
+						}
+
+						pos += lineLength;
+					}
+				}
+				else {
+					console.log(error);
+				}
 			});
 	}
 	else {

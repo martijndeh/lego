@@ -33,6 +33,7 @@ exports = module.exports = class PostgresDriver {
 		return new Promise(function(resolve, reject) {
 			client.query(text, parameters, function(error, result) {
 				if(error) {
+					error.query = text;
 					reject(error);
 				}
 				else {
