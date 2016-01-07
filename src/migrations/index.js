@@ -128,29 +128,25 @@ exports = module.exports = {
 			var self = this;
 			var _migrate = function(version, direction) {
 				return Lego.transaction(function(lego) {
+					var migration = self.loadMigration(version);
 					var queue = new Queue(lego);
 
-					var migration = self.loadMigration(version);
-					var returnValue = migration[direction](lego, queue);
+					return Promise.resolve(migration[direction](lego, queue))
+						.then(function() {
+							let result = Promise.resolve(true);
 
-					if(returnValue) {
-						throw new Error('Returning in a migration is not possible yet. Migration `' + version + '`.');
-					}
-					else {
-						let result = Promise.resolve(true);
-
-						queue._.forEach(function(item) {
-							result = result.then(function() {
-								return item.exec();
+							queue._.forEach(function(item) {
+								result = result.then(function() {
+									return item.exec();
+								});
 							});
+
+							return result;
+						})
+						.then(function() {
+							var newVersion = direction == 'up' ? version : version - 1;
+							return lego.new `INSERT INTO lego.migrations (version) VALUES (${newVersion})`;
 						});
-
-						return result
-							.then(function() {
-								var newVersion = direction == 'up' ? version : version - 1;
-								return lego.new `INSERT INTO lego.migrations (version) VALUES (${newVersion})`;
-							});
-					}
 				});
 			};
 

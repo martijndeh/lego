@@ -168,6 +168,30 @@ describe('migrations', function() {
 						}
 					};
 				}
+				else if(version === 4) {
+					return {
+						up: function(lego, queue) {
+							queue.add `UPDATE tests SET value = 2`;
+
+							return Lego.new `UPDATE tests SET value = 1;`;
+						},
+
+						down: function() {
+							//
+						}
+					};
+				}
+				else if(version === 5) {
+					return {
+						up: function() {
+							return Lego.new `INSERT INTO testttts (this is a typo)`;
+						},
+
+						down: function() {
+							//
+						}
+					};
+				}
 			});
 		});
 
@@ -251,6 +275,29 @@ describe('migrations', function() {
 				.then(assert.fail)
 				.catch(function(error) {
 					assert.equal(error.code, '42P01');
+				});
+		});
+
+		it('returning promise preceeds queue items', function() {
+			return Lego.Migrations.migrate(0, 4)
+				.then(function() {
+					return Lego.new `SELECT * FROM tests`.first();
+				})
+				.then(function(row) {
+					assert.equal(row.value, 2);
+				});
+		});
+
+		it('fail migration', function() {
+			return Lego.Migrations.migrate(0, 5)
+				.then(assert.fail)
+				.catch(function(error) {
+					assert.notEqual(error, null);
+
+					return Lego.Migrations.getDatabaseVersion()
+						.then(function(version) {
+							assert.equal(version, 4);
+						});
 				});
 		});
 	});
