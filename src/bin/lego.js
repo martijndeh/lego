@@ -5,6 +5,7 @@ const argv			= require('minimist')(process.argv.slice(2));
 
 const Lego 			= require('./../lego.js');
 const migrations 	= Lego.Migrations;
+const chalk 		= require('chalk');
 
 if(Lego.DriverInstance.setPoolIdleTimeout) {
 	Lego.DriverInstance.setPoolIdleTimeout(500);
@@ -35,14 +36,18 @@ var commandMaps = {
 				.then(function(localVersion) {
 					if(localVersion === 0) {
 						// We're done. We don't have any migrations.
+						console.log(chalk.bgGreen('There are 0 local migrations.'));
 					}
 					else {
 						return migrations.getDatabaseVersion()
 							.then(function(databaseVersion) {
 								if(localVersion > databaseVersion) {
-									console.log('Migrating from ' + databaseVersion + ' to ' + localVersion);
+									console.log(chalk.bgGreen('Migrating from ' + databaseVersion + ' to ' + localVersion));
 
-									return migrations.migrate(databaseVersion, localVersion);
+									return migrations.migrate(databaseVersion, localVersion)
+										.then(function() {
+											console.log(chalk.bgGreen('Successfully migrated to ' + localVersion + '.'));
+										});
 								}
 								else if(databaseVersion < localVersion) {
 									// Local migrations behind database migrations.
@@ -50,7 +55,7 @@ var commandMaps = {
 								}
 								else {
 									// Everything up-to-date!
-									console.log('Everything is up-to-date!');
+									console.log(chalk.bgGreen('Everything is up-to-date!'));
 								}
 							});
 					}
