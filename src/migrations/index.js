@@ -137,7 +137,15 @@ exports = module.exports = {
 						throw new Error('Returning in a migration is not possible yet. Migration `' + version + '`.');
 					}
 					else {
-						return Promise.all(queue._)
+						let result = Promise.resolve(true);
+
+						queue._.forEach(function(item) {
+							result = result.then(function() {
+								return item.exec();
+							});
+						});
+
+						return result
 							.then(function() {
 								var newVersion = direction == 'up' ? version : version - 1;
 								return lego.new `INSERT INTO lego.migrations (version) VALUES (${newVersion})`;
