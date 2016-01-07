@@ -53,7 +53,12 @@ exports = module.exports = function(Lego) {
 		getDatabaseVersion: function() {
 			return Lego.new `SELECT version FROM lego.migrations ORDER BY created_at DESC LIMIT 1`.first()
 				.then(function(row) {
-					return row.version;
+					if(row) {
+						return row.version;
+					}
+					else {
+						return 0;
+					}
 				})
 				.catch(function(error) {
 					if(error.code == '42P01') {
