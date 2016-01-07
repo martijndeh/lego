@@ -1,6 +1,6 @@
 {
   "name": "lego-sql",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "A lightweight SQL (string) builder using ES6 template strings. Lego embraces SQL instead of adding yet another abstraction layer.",
   "main": "index.js",
   "scripts": {
