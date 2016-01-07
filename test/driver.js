@@ -45,6 +45,11 @@ describe('query', function() {
 			});
 	});
 
+	it('can set pool idle timeout', function() {
+		var driver = Lego.Driver('postgres://localhost:1337');
+		driver.setPoolIdleTimeout(500);
+	});
+
 	it('connect error', function() {
 		var driver = Lego.Driver('postgres://localhost:1337');
 		driver.connect()

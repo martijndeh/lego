@@ -51,7 +51,8 @@ exports = module.exports = function(Lego) {
 		},
 
 		getDatabaseVersion: function() {
-			return Lego.new `SELECT version FROM lego.migrations ORDER BY created_at DESC LIMIT 1`.first()
+			return Lego.new `SELECT version FROM lego.migrations ORDER BY created_at DESC LIMIT 1`
+				.first()
 				.then(function(row) {
 					if(row) {
 						return row.version;

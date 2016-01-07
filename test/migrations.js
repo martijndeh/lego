@@ -14,6 +14,8 @@ describe('migrations', function() {
 
 	afterEach(function() {
 		sandbox.restore();
+
+		return Lego.new `DROP SCHEMA IF EXISTS lego CASCADE`;
 	});
 
 	it('can read current version from fs', function() {
@@ -63,6 +65,87 @@ describe('migrations', function() {
 			.then(assert.fail)
 			.catch(function(error) {
 				assert.equal(error.message, 'unknown error');
+			});
+	});
+
+	it('get database version fails', function() {
+		sandbox.stub(Lego, 'new', function() {
+			return {
+				first: function() {
+					return Promise.reject(new Error('Unknown error'));
+				}
+			};
+		});
+
+		return Lego.Migrations.getDatabaseVersion()
+			.then(assert.fail)
+			.catch(function(error) {
+				assert.equal(error.message, 'Unknown error');
+			});
+	});
+
+	it('can get database version if lego schema exists but is empty', function() {
+		return Lego.Migrations.createMigrationsTable()
+			.then(function() {
+				return Lego.Migrations.getDatabaseVersion();
+			})
+			.then(function(version) {
+				assert.equal(version, 0);
+			});
+	});
+
+	it('can get database version if no lego schema exists', function() {
+		return Lego.Migrations.getDatabaseVersion()
+			.then(function(version) {
+				assert.equal(version, 0);
+			});
+	});
+
+	it('cannot create migration if mkdir fails', function() {
+		sandbox.stub(fs, 'mkdir', function(path, callback) {
+			callback(new Error('Unknown error'));
+		});
+
+		return Lego.Migrations.createMigration(1)
+			.then(assert.fail)
+			.catch(function(error) {
+				assert.equal(error.message, 'Unknown error');
+			});
+	});
+
+	it('cannot create migration if writeFile fails', function() {
+		sandbox.stub(fs, 'mkdir', function(path, callback) {
+			callback(null);
+		});
+
+		sandbox.stub(fs, 'writeFile', function(path, data, callback) {
+			callback(new Error('Unknown error'));
+		});
+
+		return Lego.Migrations.createMigration(1)
+			.then(assert.fail)
+			.catch(function(error) {
+				assert.equal(error.message, 'Unknown error');
+			});
+	});
+
+	it('can load migration', function() {
+		assert.throws(function() {
+			Lego.Migrations.loadMigration(1);
+		}, function(error) {
+			return (error.message.indexOf('Cannot find module') !== -1);
+		});
+	});
+
+	it('throws error if create lego.migrations fails', function() {
+		sandbox.stub(Lego, 'new', function() {
+			return Promise.reject(new Error('Unknown error'));
+		});
+
+		return Lego.Migrations.createMigrationsTable()
+			.then(assert.fail)
+			.catch(function(error) {
+				assert.equal(error.message, 'Unknown error');
 			});
 	});
 
@@ -136,10 +219,12 @@ describe('migrations', function() {
 					return {
 						up: function(lego, queue) {
 							queue.add `CREATE TABLE tests (name TEXT, value INTEGER)`;
+							queue.add(Lego.new `CREATE TABLE tests2 (value INTEGER)`);
 						},
 
 						down: function(lego, queue) {
 							queue.add `DROP TABLE tests`;
+							queue.add `DROP TABLE tests2`;
 						}
 					};
 				}
@@ -196,7 +281,7 @@ describe('migrations', function() {
 		});
 
 		afterEach(function() {
-			return Lego.new `DROP TABLE IF EXISTS tests`
+			return Lego.new `DROP TABLE IF EXISTS tests, tests2`
 				.then(function() {
 					return Lego.new `DROP SCHEMA IF EXISTS lego CASCADE`;
 				});
@@ -299,6 +384,14 @@ describe('migrations', function() {
 							assert.equal(version, 4);
 						});
 				});
+		});
+	});
+
+	it('cannot function-call queue', function() {
+		assert.throws(function() {
+			Lego.Migrations.Queue();
+		}, function(error) {
+			return error.message === 'Cannot call a class as a function';
 		});
 	});
 });
