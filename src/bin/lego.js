@@ -68,10 +68,10 @@ var commandMaps = {
 			return migrations.getDatabaseVersion()
 				.then(function(databaseVersion) {
 					if(databaseVersion === 0) {
-						//
+						console.log(chalk.bgGreen('Already at version 0!'));
 					}
 					else {
-						console.log('Rolling back from ' + databaseVersion + ' to ' + databaseVersion - 1);
+						console.log(chalk.bgGreen('Rolling back from ' + databaseVersion + ' to ' + databaseVersion - 1));
 
 						return migrations.migrate(databaseVersion, databaseVersion - 1);
 					}
