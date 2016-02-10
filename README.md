@@ -8,11 +8,71 @@ A lightweight SQL (string) builder using ES6 template strings.
 npm install lego-sql --save
 ```
 
-Lego embraces SQL instead of adding yet another abstraction layer. It supports client pooling (using pg), transactions and migrations including a cli. Currently,
+Lego embraces SQL instead of adding yet another abstraction layer. It supports client pooling (using pg), data mapping, transactions and migrations including a cli. Currently,
 only PostgreSQL is supported. Feel free to send pull requests! :-)
 
 ```js
 Lego.new `SELECT * FROM users WHERE name = ${name}`;
+```
+
+The data mapper allows you to easily parse rows from a query and construct objects based on a definition object:
+
+```js
+Lego.new `SELECT
+	projects.id,
+	projects.created_at,
+	project_members.id member_id,
+	project_members.name member_name,
+	project_members.email member_email
+	project_members.joined_at member_joined_at
+FROM projects
+INNER JOIN project_members ON projects.id = project_members.project_id
+WHERE
+	projects.id = ${projectID}`
+	.then((rows) => {
+		return Lego.parse(rows, {
+			id: 'id',
+			created_at: 'created_at',
+			members: [{
+				id: 'member_id',
+				name: 'member_name',
+				email: 'member_email',
+				joined_at: 'member_joined_at'
+			}]
+		})
+	})
+	.then((project) => {
+		//
+	})
+```
+
+Once decorators are supported, the following syntax sugar will be possible:
+
+```js
+@parse({
+	id: 'id',
+	created_at: 'created_at',
+	members: [{
+		id: 'member_id',
+		name: 'member_name',
+		email: 'member_email',
+		joined_at: 'member_joined_at'
+	}]
+})
+Lego.new `SELECT
+	projects.id,
+	projects.created_at,
+	project_members.id member_id,
+	project_members.name member_name,
+	project_members.email member_email
+	project_members.joined_at member_joined_at
+FROM projects
+INNER JOIN project_members ON projects.id = project_members.project_id
+WHERE
+	projects.id = ${projectID}`
+	.then((project) => {
+		// We have the project data in a single object.
+	});
 ```
 
 ## Quick start
@@ -84,6 +144,48 @@ Lego.new `SELECT
 
 In `DELETE`, `UPDATE` and `INSERT` queries, when not using a `RETURNING` clause, the number of affected rows is resolved. Otherwise, the rows are resolved.
 
+## Data mapper
+
+Lego makes it easy to parse rows and transform them to objects. Consider the below rows:
+
+```js
+var rows = [{
+	id: 1,
+	test_id: 1,
+	test_name: 'Test 1'
+}, {
+	id: 1,
+	test_id: 2,
+	test_name: 'Test 2'
+}];
+```
+
+The rows are flat but do contain 1 root object and 2 child objects. Something like the below:
+
+```js
+var objects = [{
+	id: 1,
+	tests: [{
+		id: 1,
+		name: 'Test 1'
+	}, {
+		id: 2,
+		name: 'Test 2'
+	}]
+}]
+```
+
+You can transform the rows by simply passing the rows to Lego's parse system and providing a definition object:
+```js
+Lego.parse(rows, [{
+	id: 'id',
+	tests: [{
+		id: 'test_id',
+		name: 'test_name'
+	}]
+}]);
+```
+
 ## Transactions
 
 Transactions are also supported. In the `callback` make sure to return a promise. Based on it being fulfilled or rejected the transaction will, respectively, be commited or rolled back.
@@ -131,6 +233,7 @@ lego migrate:<version>               Migrates or rolls back to the target migrat
 
 ### Roadmap
 
+- Implement decorators as soon as they enter phase 2.
 - Implement additional drivers (mysql, etc).
 - Add a seeds feature similar to the migrations.
 - Extend the public API e.g. add `Lego#pluck`.

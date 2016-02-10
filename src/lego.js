@@ -168,5 +168,6 @@ Lego.Driver 		= require('./driver');
 Lego.DriverInstance = Driver;
 Lego.LegoInstance 	= LegoInstance;
 Lego.Migrations 	= require('./migrations')(Lego);
+Lego.parse 			= require('./data-mapper');
 
 exports = module.exports = Lego;
