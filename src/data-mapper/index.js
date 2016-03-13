@@ -53,8 +53,8 @@ exports = module.exports = function (rows, definition) {
 			metadata[id] = data;
 		}
 
-		Object.keys(row).forEach(function(columnName) {
-			var column = columns[columnName];
+		Object.keys(row).forEach((columnName) => {
+			const column = columns[columnName];
 
 			// If this is a primary key...
 			if(column.name == 'id') {
@@ -64,8 +64,7 @@ exports = module.exports = function (rows, definition) {
 				else {
 					isNull = false;
 
-					let type 	= ['object'].concat(column.parents).join(':');
-					let stateID = type + ':' + row[columnName];
+					const stateID = createStateID(row[columnName], column.parents);
 
 					if(column.parents.length === 0) {
 						// find the root state with id $id—or create something new
@@ -156,6 +155,16 @@ exports = module.exports = function (rows, definition) {
 								});
 							}
 							else if(currentStateMetadata.parents.length - 1 == column.parents.length) {
+								let offset = 1;
+
+								while (column.parents[column.parents.length - offset] != currentStateMetadata.parents[currentStateMetadata.parents.length - 1 - 1]) {
+									// OK, so we don't have the same relation.
+									const parentStateID = createStateID(currentStateMetadata.parent.id, currentStateMetadata.parents.slice(0, -1));
+									currentStateMetadata = findMetadata(parentStateID);
+
+									offset = offset + 1;
+								}
+
 								// This is a parent.
 								state = {};
 
