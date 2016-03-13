@@ -1,5 +1,6 @@
 const Lego = require('..');
 const assert = require('assert');
+const util = require('util');
 
 describe('data mapper', function() {
 	it('simple rows', function() {
@@ -167,5 +168,19 @@ describe('data mapper', function() {
 
 		assert.equal(objects[1].id, 2);
 		assert.equal(objects[1].tests.length, 2);
+	});
+
+	it('single object', function() {
+		const rows = [{
+			id: 'd15d8d11-2b1c-46b4-a832-f3e2958fa45f',
+			name: 'musketeer.ai',
+		}];
+
+		const object = Lego.parse(rows, {
+			id: 'id',
+			name: 'name',
+		});
+
+		assert.notEqual(object, null);
 	});
 });

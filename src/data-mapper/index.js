@@ -1,7 +1,11 @@
 const util = require('util');
 const debug = require('debug')('lego:parse');
 
-exports = module.exports = function(rows, definition) {
+function createStateID(id, parents) {
+	return ['object', ...parents, id].join(':');
+}
+
+exports = module.exports = function (rows, definition) {
 	var isArray = Array.isArray(definition);
 	var result = isArray ? [] : {};
 
@@ -78,7 +82,7 @@ exports = module.exports = function(rows, definition) {
 								result.push(rootState);
 							}
 							else {
-								if(result) {
+								if(result && Object.keys(result).length > 0) {
 									throw new Error('The root object already exists, but a new object with a different id found. Should the root object in your definition be an array instead?');
 								}
 
