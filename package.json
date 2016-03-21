@@ -2,13 +2,12 @@
   "name": "lego-sql",
   "version": "0.5.1",
   "description": "A lightweight SQL (string) builder using ES6 template strings. Lego embraces SQL instead of adding yet another abstraction layer.",
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
-    "babel": "babel src -d lib",
-    "coverage-html": "jscoverage lib lib-cov && NODE_COV=1 NODE_ENV=test mocha ./test/*.js -R html-cov > coverage.html && rm -rf lib-cov",
-    "coverage": "jscoverage lib lib-cov && NODE_COV=1 NODE_ENV=test mocha ./test/*.js -R mocha-lcov-reporter > coverage.lcov && rm -rf lib-cov",
-    "test": "NODE_ENV=test mocha -g '^' --reporter spec ./test/*.js",
-    "coveralls": "cat ./coverage.lcov | ./node_modules/coveralls/bin/coveralls.js"
+    "build": "babel src -d lib",
+    "coverage": "istanbul cover _mocha -- --compilers js:babel-register --recursive ./test/*.js",
+    "test": "NODE_ENV=test mocha --compilers js:babel-register --reporter spec ./test/*.js",
+    "coveralls": "cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
   },
   "repository": {
     "type": "git",
@@ -26,9 +25,14 @@
   "devDependencies": {
     "babel": "^6.3.26",
     "babel-cli": "^6.3.17",
+    "babel-plugin-transform-decorators-legacy": "^1.3.4",
+    "babel-plugin-transform-function-bind": "^6.5.2",
+    "babel-plugin-transform-object-rest-spread": "^6.6.5",
     "babel-preset-es2015": "^6.3.13",
+    "babel-register": "^6.7.2",
     "blanket": "^1.2.1",
     "coveralls": "^2.11.6",
+    "istanbul": "^0.4.2",
     "jscoverage": "^0.6.0",
     "mocha": "^2.3.4",
     "mocha-lcov-reporter": "^1.0.0",
