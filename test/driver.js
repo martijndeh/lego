@@ -1,82 +1,82 @@
-const Lego = require('..');
+const Lego = require('../src/lego.js');
 const assert = require('assert');
 
-describe('query', function() {
-	it('exec and resolves', function() {
-		var lego = Lego.new `SELECT 1 as count`;
+describe('query', function () {
+	it('exec and resolves', function () {
+		var lego = Lego.sql `SELECT 1 as count`;
 		return lego.exec()
-			.then(function(rows) {
+			.then(function (rows) {
 				assert.equal(rows.length, 1);
 				assert.equal(rows[0].count, '1');
 			});
 	});
 
-	it('exec and rejects', function() {
-		var lego = Lego.new `SELECT fail`;
+	it('exec and rejects', function () {
+		var lego = Lego.sql `SELECT fail`;
 		return lego.exec()
 			.then(assert.fail)
-			.catch(function(error) {
+			.catch(function (error) {
 				assert.equal(error.message, 'column "fail" does not exist');
 			});
 	});
 
-	it('resolves first result', function() {
-		var lego = Lego.new `SELECT 1 as count`;
+	it('resolves first result', function () {
+		var lego = Lego.sql `SELECT 1 as count`;
 		return lego.first()
-			.then(function(row) {
+			.then(function (row) {
 				assert.equal(row.length, undefined);
 				assert.equal(row.count, '1');
 			});
 	});
 
-	it('resolves null result with first on 0 rows', function() {
-		var lego = Lego.new `SELECT 1 WHERE 1 <> 1`;
+	it('resolves null result with first on 0 rows', function () {
+		var lego = Lego.sql `SELECT 1 WHERE 1 <> 1`;
 		return lego.first()
-			.then(function(row) {
+			.then(function (row) {
 				assert.equal(row, null);
 			});
 	});
 
-	it('is then-able', function() {
-		return Lego.new `SELECT 1 as count`
-			.then(function(rows) {
+	it('is then-able', function () {
+		return Lego.sql `SELECT 1 as count`
+			.then(function (rows) {
 				assert.equal(rows.length, 1);
 				assert.equal(rows[0].count, '1');
 			});
 	});
 
-	it('can set pool idle timeout', function() {
+	it('can set pool idle timeout', function () {
 		var driver = Lego.Driver('postgres://localhost:1337');
 		driver.setPoolIdleTimeout(500);
 	});
 
-	it('connect error', function() {
+	it('connect error', function () {
 		var driver = Lego.Driver('postgres://localhost:1337');
 		driver.connect()
 			.then(assert.fail)
-			.catch(function(error) {
+			.catch(function (error) {
 				assert.equal(error.message, 'connect ECONNREFUSED 127.0.0.1:1337');
 			});
 	});
 
-	it('undefined database url', function() {
-		assert.throws(function() {
+	it('undefined database url', function () {
+		assert.throws(function () {
 			Lego.Driver(null);
 		}, function(error) {
 			return error.message === 'No DATABASE_URL provided.';
 		});
 	});
 
-	it('unsupported driver', function() {
-		assert.throws(function() {
+	it('unsupported driver', function () {
+		assert.throws(function () {
 			Lego.Driver('mysql://localhost');
 		}, function(error) {
 			return error.message === 'Unsupported driver in DATABASE_URL.';
 		});
 	});
 
-	it('class call check', function() {
-		assert.throws(function() {
+	it('class call check', function () {
+		assert.throws(function () {
 			Lego.Driver.Postgres();
 		}, function(error) {
 			return error.message === 'Cannot call a class as a function';

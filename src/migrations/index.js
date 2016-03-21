@@ -11,7 +11,7 @@ const Queue = require('./queue.js');
 exports = module.exports = function(Lego) {
 	return {
 		Queue: Queue,
-		getCurrentVersion: function() {
+		getCurrentVersion: function () {
 			return new Promise(function(resolve, reject) {
 				fs.readdir(path.join(process.cwd(), 'migrations'), function(error, files) {
 					if(error) {
@@ -50,10 +50,10 @@ exports = module.exports = function(Lego) {
 			});
 		},
 
-		getDatabaseVersion: function() {
-			return Lego.new `SELECT version FROM lego.migrations ORDER BY created_at DESC LIMIT 1`
+		getDatabaseVersion: function () {
+			return Lego.sql `SELECT version FROM lego.migrations ORDER BY created_at DESC LIMIT 1`
 				.first()
-				.then(function(row) {
+				.then(function (row) {
 					if(row) {
 						return row.version;
 					}
@@ -61,7 +61,7 @@ exports = module.exports = function(Lego) {
 						return 0;
 					}
 				})
-				.catch(function(error) {
+				.catch(function (error) {
 					if(error.code == '42P01') {
 						return 0;
 					}
@@ -105,13 +105,13 @@ exports = module.exports = {
 			});
 		},
 
-		createMigrationsTable: function() {
-			return Lego.new `CREATE SCHEMA lego
+		createMigrationsTable: function () {
+			return Lego.sql `CREATE SCHEMA lego
 				CREATE TABLE migrations (
 					version INTEGER,
 					created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
 				)`
-				.catch(function(error) {
+				.catch(function (error) {
 					if(error.code == '42P06') {
 						// The schema already exists. That's fine.
 					}
@@ -128,25 +128,25 @@ exports = module.exports = {
 		migrate: function(from, to) {
 			var self = this;
 			var _migrate = function(version, direction) {
-				return Lego.transaction(function(lego) {
+				return Lego.transaction(function (lego) {
 					var migration = self.loadMigration(version);
 					var queue = new Queue(lego);
 
 					return Promise.resolve(migration[direction](lego, queue))
-						.then(function() {
+						.then(function () {
 							let result = Promise.resolve(true);
 
 							queue._.forEach(function(item) {
-								result = result.then(function() {
+								result = result.then(function () {
 									return item.exec();
 								});
 							});
 
 							return result;
 						})
-						.then(function() {
+						.then(function () {
 							var newVersion = direction == 'up' ? version : version - 1;
-							return lego.new `INSERT INTO lego.migrations (version) VALUES (${newVersion})`;
+							return lego.sql `INSERT INTO lego.migrations (version) VALUES (${newVersion})`;
 						});
 				});
 			};
@@ -173,7 +173,7 @@ exports = module.exports = {
 			}
 
 			versions.forEach(function(version) {
-				result = result.then(function() {
+				result = result.then(function () {
 					return _migrate(version, direction);
 				});
 			});

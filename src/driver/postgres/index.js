@@ -51,14 +51,14 @@ exports = module.exports = class PostgresDriver {
 	exec(text, parameters) {
 		var self = this;
 		return this.connect()
-			.then(function(driver) {
+			.then(function (driver) {
 				return self.query(driver.client, text, parameters)
-					.then(function(result) {
+					.then(function (result) {
 						driver.done();
 
 						return result;
 					})
-					.catch(function(error) {
+					.catch(function (error) {
 						driver.done();
 
 						throw error;
@@ -69,9 +69,9 @@ exports = module.exports = class PostgresDriver {
 	beginTransaction() {
 		var self = this;
 		return this.connect()
-			.then(function(driver) {
+			.then(function (driver) {
 				return self.query(driver.client, 'BEGIN', [])
-					.then(function() {
+					.then(function () {
 						return driver;
 					});
 			});

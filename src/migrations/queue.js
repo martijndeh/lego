@@ -4,17 +4,17 @@ exports = module.exports = class LegoQueue {
 		this._ = [];
 	}
 
-	add(stringsOrOtherLegoInstance, ...parameters) { //jshint ignore:line
+	add(stringsOrOtherLegoInstance, ...parameters) {
 		let lego = null;
 
-		if(stringsOrOtherLegoInstance instanceof this._lego.constructor) {
+		if (stringsOrOtherLegoInstance instanceof this._lego.constructor) {
 			lego = stringsOrOtherLegoInstance;
 		}
 		else {
-			lego = this._lego.new();
+			lego = this._lego.sql();
 
-			var args = [].slice.call(arguments, 0);
-			lego.add.apply(lego, args);
+			const args = [].slice.call(arguments, 0);
+			lego.append.apply(lego, args);
 		}
 
 		this._.push(lego);

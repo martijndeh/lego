@@ -22,30 +22,30 @@ var _show = function(message) {
 var commandMaps = {
 	'migrate:make': {
 		description: 'Creates a new migration file.',
-		action: function() {
+		action: function () {
 			return migrations.getCurrentVersion()
-				.then(function(version) {
+				.then(function (version) {
 					return migrations.createMigration(version + 1);
 				});
 		}
 	},
 	'migrate:latest': {
 		description: 'Migrates to the latest migration.',
-		action: function() {
+		action: function () {
 			return migrations.getCurrentVersion()
-				.then(function(localVersion) {
+				.then(function (localVersion) {
 					if(localVersion === 0) {
 						// We're done. We don't have any migrations.
 						console.log(chalk.bgGreen('There are 0 local migrations.'));
 					}
 					else {
 						return migrations.getDatabaseVersion()
-							.then(function(databaseVersion) {
+							.then(function (databaseVersion) {
 								if(localVersion > databaseVersion) {
 									console.log(chalk.bgGreen('Migrating from ' + databaseVersion + ' to ' + localVersion));
 
 									return migrations.migrate(databaseVersion, localVersion)
-										.then(function() {
+										.then(function () {
 											console.log(chalk.bgGreen('Successfully migrated to ' + localVersion + '.'));
 										});
 								}
@@ -64,9 +64,9 @@ var commandMaps = {
 	},
 	'migrate:rollback': {
 		description: 'Rolls back the previous migration.',
-		action: function() {
+		action: function () {
 			return migrations.getDatabaseVersion()
-				.then(function(databaseVersion) {
+				.then(function (databaseVersion) {
 					if(databaseVersion === 0) {
 						console.log(chalk.bgGreen('Already at version 0!'));
 					}
@@ -82,20 +82,20 @@ var commandMaps = {
 		description: 'Migrates or rolls back to the target migration <version>.',
 		action: function(version) {
 			return migrations.getCurrentVersion()
-				.then(function(localVersion) {
+				.then(function (localVersion) {
 					return migrations.migrate(localVersion, version);
 				});
 		}
 	},
 	'version': {
-		action: function() {
+		action: function () {
 			const packageJSON = require(path.join(__dirname, '..', '..', 'package.json'));
 			console.log(packageJSON.version);
 		}
 	},
 	'help': {
 		description: 'Shows this help message.',
-		action: function() {
+		action: function () {
 			console.log('Usage: lego TOPIC[:ACTION]');
 			console.log('');
 			console.log('List of topics and actions:');
@@ -123,10 +123,10 @@ if(argv._.length) {
 
 	if(activeCommand) {
 		activeCommand.action(command[1], command[0])
-			.then(function() {
+			.then(function () {
 				// Done!
 			})
-			.catch(function(error) {
+			.catch(function (error) {
 				if(error.code === '42601') {
 					console.log('');
 					console.log('Error: ' + error.message);

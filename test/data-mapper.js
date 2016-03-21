@@ -1,9 +1,9 @@
-const Lego = require('..');
+const Lego = require('../src/lego.js');
 const assert = require('assert');
 const util = require('util');
 
-describe('data mapper', function() {
-	it('simple rows', function() {
+describe('data mapper', function () {
+	it('simple rows', function () {
 		var rows = [{
 			id: 1,
 			name: 'Test 1'
@@ -25,7 +25,7 @@ describe('data mapper', function() {
 	});
 
 
-	it('objects with 1 relation', function() {
+	it('objects with 1 relation', function () {
 		var rows = [{
 			id: 1,
 			test_id: 1,
@@ -49,7 +49,7 @@ describe('data mapper', function() {
 		assert.equal(objects[0].tests.length, 2);
 	});
 
-	it('object with 2 relations', function() {
+	it('object with 2 relations', function () {
 		var rows = [{
 			id: 1,
 			test_id: 1,
@@ -87,7 +87,7 @@ describe('data mapper', function() {
 		assert.equal(objects[0].foos[1].id, 21);
 	});
 
-	it('object with 3 relations and 1 null', function() {
+	it('object with 3 relations and 1 null', function () {
 		var rows = [{
 			id: 1,
 			test_id: 1,
@@ -135,7 +135,7 @@ describe('data mapper', function() {
 		assert.equal(objects[0].bars.length, 1);
 	});
 
-	it('object with 1 relation but multiple rows', function() {
+	it('object with 1 relation but multiple rows', function () {
 		var rows = [{
 			id: 1,
 			test_id: 1,
@@ -170,7 +170,7 @@ describe('data mapper', function() {
 		assert.equal(objects[1].tests.length, 2);
 	});
 
-	it('single object', function() {
+	it('single object', function () {
 		const rows = [{
 			id: 'd15d8d11-2b1c-46b4-a832-f3e2958fa45f',
 			name: 'musketeer.ai',
