@@ -12,13 +12,13 @@ Lego embraces SQL instead of adding yet another abstraction layer. It supports c
 only PostgreSQL is supported. Feel free to send pull requests! :-)
 
 ```js
-Lego.new `SELECT * FROM users WHERE name = ${name}`;
+Lego.sql `SELECT * FROM users WHERE name = ${name}`;
 ```
 
 The data mapper allows you to easily parse rows from a query and construct objects based on a definition object:
 
 ```js
-Lego.new `SELECT
+Lego.sql `SELECT
 	projects.id,
 	projects.created_at,
 	project_members.id member_id,
@@ -46,35 +46,6 @@ WHERE
 	})
 ```
 
-Once decorators are supported, the following syntax sugar will be possible:
-
-```js
-@parse({
-	id: 'id',
-	created_at: 'created_at',
-	members: [{
-		id: 'member_id',
-		name: 'member_name',
-		email: 'member_email',
-		joined_at: 'member_joined_at'
-	}]
-})
-Lego.new `SELECT
-	projects.id,
-	projects.created_at,
-	project_members.id member_id,
-	project_members.name member_name,
-	project_members.email member_email
-	project_members.joined_at member_joined_at
-FROM projects
-INNER JOIN project_members ON projects.id = project_members.project_id
-WHERE
-	projects.id = ${projectID}`
-	.then((project) => {
-		// We have the project data in a single object.
-	});
-```
-
 ## Quick start
 
 Lego uses ES6 template strings. From the template string, a parameterized
@@ -84,11 +55,11 @@ the input.
 A Lego instance is then-able. This means it's executed when `.then()` is
 invoked. You can use it in the following way:
 ```js
-Lego.new `INSERT INTO projects (name) VALUES (${name}) RETURNING *`
-	.then(function(projects) {
-		return Lego.new `INSERT INTO project_settings (project_id) VALUES (${projects[0].id})`;
+Lego.sql `INSERT INTO projects (name) VALUES (${name}) RETURNING *`
+	.then(function (projects) {
+		return Lego.sql `INSERT INTO project_settings (project_id) VALUES (${projects[0].id})`;
 	})
-	.then(function() {
+	.then(function () {
 		// Ready! :-)
 	})
 ```
@@ -96,26 +67,26 @@ Lego.new `INSERT INTO projects (name) VALUES (${name}) RETURNING *`
 You can also create an instance and call `Lego#add` multiple times to
 construct a more advanced query:
 ```js
-var lego = Lego.new();
-lego.add `SELECT * FROM users`;
-lego.add `INNER JOIN projects ON projects.user_id = users.id`;
+var lego = Lego.sql();
+lego.append `SELECT * FROM users`;
+lego.append `INNER JOIN projects ON projects.user_id = users.id`;
 
 if(sort) {
-	lego.add `ORDER BY projects.name`;
+	lego.append `ORDER BY projects.name`;
 }
 
-lego.add `LIMIT 10`;
+lego.append `LIMIT 10`;
 ```
 
 You can combine different Lego instances:
 ```js
-var lego = Lego.new();
-lego.add `SELECT * FROM users`;
+var lego = Lego.sql();
+lego.append `SELECT * FROM users`;
 
-var whereLego = Lego.new `WHERE users.name = ${name}`;
+var whereLego = Lego.sql `WHERE users.name = ${name}`;
 lego.add(whereLego);
 
-var sortLego = Lego.new `ORDER BY users.created_at DESC`;
+var sortLego = Lego.sql `ORDER BY users.created_at DESC`;
 lego.add(sortLego);
 
 lego.exec();
@@ -123,16 +94,16 @@ lego.exec();
 
 You can chain calls, if you want:
 ```js
-Lego.new `SELECT * FROM users WHERE name = 'Martijn' LIMIT 1`
+Lego.sql `SELECT * FROM users WHERE name = 'Martijn' LIMIT 1`
 	.first()
-	.then(function(user) {
+	.then(function (user) {
 		//
 	});
 ```
 
 Obviously, you can write multi-line strings, like the following:
 ```js
-Lego.new `SELECT
+Lego.sql `SELECT
 		*
 	FROM
 		users
@@ -141,6 +112,11 @@ Lego.new `SELECT
 	LIMIT 1`;
 ```
 (I'm not too sure about the indentation best practices when writing multi-line SQL strings though.)
+
+You can also nest arrays of lego instances:
+```js
+Lego.sql `INSERT INTO projects (name) VALUES ${projects.map((project) => Lego.sql `(${project.name})`)}`;
+```
 
 In `DELETE`, `UPDATE` and `INSERT` queries, when not using a `RETURNING` clause, the number of affected rows is resolved. Otherwise, the rows are resolved.
 
@@ -191,10 +167,10 @@ Lego.parse(rows, [{
 Transactions are also supported. In the `callback` make sure to return a promise. Based on it being fulfilled or rejected the transaction will, respectively, be commited or rolled back.
 
 ```js
-Lego.transaction(function(lego) {
-	return lego.new `UPDATE money SET value = value + 100`
-		.then(function() {
-			return lego.new `UPDATE money SET value = value - 100`;
+Lego.transaction(function (lego) {
+	return lego.sql `UPDATE money SET value = value + 100`
+		.then(function () {
+			return lego.sql `UPDATE money SET value = value - 100`;
 		});
 });
 ```
