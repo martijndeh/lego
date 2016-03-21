@@ -1,0 +1,19 @@
+{
+	"preset": "airbnb",
+	"validateIndentation": "\t",
+	"disallowKeywordsOnNewLine": null,
+	"requireSpacesInsideObjectBrackets": null,
+	"esnext": true,
+	"disallowVar": true,
+	"maximumLineLength": {
+		"value": 1000,
+	},
+	"safeContextKeyword": ["self"],
+	"disallowEmptyBlocks": false,
+	"validateIndentation": false,
+	"requireTrailingComma": {
+		"ignoreSingleLine": true,
+		"ignoreSingleValue": true
+	},
+	"requireShorthandArrowFunctions": false
+}
