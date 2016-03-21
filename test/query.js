@@ -87,4 +87,38 @@ describe('create', function () {
 			return error.message === 'Cannot call a class as a function';
 		});
 	});
+
+	describe('sub instances', () => {
+		it('Regular', function () {
+			const name = 'Martijn';
+			const lego = Lego.sql `INSERT INTO users (name) ${Lego.sql `VALUES (${name})`}`;
+			const query = lego.toQuery();
+
+			assert.equal(query.text, 'INSERT INTO users (name) VALUES ($1)');
+			assert.equal(query.parameters[0], name);
+		});
+
+		it('Nest', () => {
+			const name = 'Martijn';
+			const whereLego = Lego.sql `WHERE users.name = ${name}`;
+			const sortLego = Lego.sql `ORDER BY users.created_at DESC`;
+			const lego = Lego.sql `SELECT * FROM users ${whereLego} ${sortLego}`;
+
+			const query = lego.toQuery();
+			assert.equal(query.text, 'SELECT * FROM users WHERE users.name = $1 ORDER BY users.created_at DESC');
+			assert.equal(query.parameters[0], 'Martijn');
+		});
+
+		it('Lego map', () => {
+			const names = ['Martijn', 'Bob'];
+			const lego = Lego.sql `INSERT INTO users (name) VALUES ${names.map((name) => Lego.sql `(${name})`)}`;
+
+			const query = lego.toQuery();
+
+			assert.equal(query.text, 'INSERT INTO users (name) VALUES ($1), ($2)');
+			assert.equal(query.parameters[0], 'Martijn');
+			assert.equal(query.parameters[1], 'Bob');
+		});
+	});
+
 });
