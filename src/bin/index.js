@@ -1,57 +1,56 @@
 require('dotenv').load({silent: true});
 
-const path 			= require('path');
-const argv			= require('minimist')(process.argv.slice(2));
+import minimist from 'minimist';
+import path from 'path';
+import Migrations from '../migrations/index.js';
+import { setPoolIdleTimeout } from '../driver/postgres/index.js';
+import chalk from 'chalk';
 
-const Lego 			= require('./../lego.js');
-const migrations 	= Lego.Migrations;
-const chalk 		= require('chalk');
+setPoolIdleTimeout(500);
 
-if(Lego.DriverInstance.setPoolIdleTimeout) {
-	Lego.DriverInstance.setPoolIdleTimeout(500);
-}
+const argv = minimist(process.argv.slice(2));
 
 function _space(count) {
 	return new Array(count + 1).join(' ');
 }
 
-var _show = function(message) {
+function _show(message) {
 	return message + _space(32 - message.length);
-};
+}
 
-var commandMaps = {
+const commandMaps = {
 	'migrate:make': {
 		description: 'Creates a new migration file.',
 		action: function () {
-			return migrations.getCurrentVersion()
+			return Migrations.getCurrentVersion()
 				.then(function (version) {
-					return migrations.createMigration(version + 1);
+					return Migrations.createMigration(version + 1);
 				});
-		}
+		},
 	},
 	'migrate:latest': {
 		description: 'Migrates to the latest migration.',
 		action: function () {
-			return migrations.getCurrentVersion()
+			return Migrations.getCurrentVersion()
 				.then(function (localVersion) {
-					if(localVersion === 0) {
-						// We're done. We don't have any migrations.
-						console.log(chalk.bgGreen('There are 0 local migrations.'));
+					if (localVersion === 0) {
+						// We're done. We don't have any Migrations.
+						console.log(chalk.bgGreen('There are 0 local Migrations.'));
 					}
 					else {
-						return migrations.getDatabaseVersion()
+						return Migrations.getDatabaseVersion()
 							.then(function (databaseVersion) {
-								if(localVersion > databaseVersion) {
+								if (localVersion > databaseVersion) {
 									console.log(chalk.bgGreen('Migrating from ' + databaseVersion + ' to ' + localVersion));
 
-									return migrations.migrate(databaseVersion, localVersion)
+									return Migrations.migrate(databaseVersion, localVersion)
 										.then(function () {
 											console.log(chalk.bgGreen('Successfully migrated to ' + localVersion + '.'));
 										});
 								}
-								else if(databaseVersion < localVersion) {
-									// Local migrations behind database migrations.
-									throw new Error('Your local migrations are behind your database\'s migrations.');
+								else if (databaseVersion < localVersion) {
+									// Local migrations behind database Migrations.
+									throw new Error('Your local migrations are behind your database\'s Migrations.');
 								}
 								else {
 									// Everything up-to-date!
@@ -60,38 +59,38 @@ var commandMaps = {
 							});
 					}
 				});
-		}
+		},
 	},
 	'migrate:rollback': {
 		description: 'Rolls back the previous migration.',
 		action: function () {
-			return migrations.getDatabaseVersion()
+			return Migrations.getDatabaseVersion()
 				.then(function (databaseVersion) {
-					if(databaseVersion === 0) {
+					if (databaseVersion === 0) {
 						console.log(chalk.bgGreen('Already at version 0!'));
 					}
 					else {
 						console.log(chalk.bgGreen('Rolling back from ' + databaseVersion + ' to ' + databaseVersion - 1));
 
-						return migrations.migrate(databaseVersion, databaseVersion - 1);
+						return Migrations.migrate(databaseVersion, databaseVersion - 1);
 					}
 				});
-		}
+		},
 	},
 	'migrate:<version>': {
 		description: 'Migrates or rolls back to the target migration <version>.',
-		action: function(version) {
-			return migrations.getCurrentVersion()
+		action: function (version) {
+			return Migrations.getCurrentVersion()
 				.then(function (localVersion) {
-					return migrations.migrate(localVersion, version);
+					return Migrations.migrate(localVersion, version);
 				});
-		}
+		},
 	},
 	'version': {
 		action: function () {
 			const packageJSON = require(path.join(__dirname, '..', '..', 'package.json'));
 			console.log(packageJSON.version);
-		}
+		},
 	},
 	'help': {
 		description: 'Shows this help message.',
@@ -101,9 +100,9 @@ var commandMaps = {
 			console.log('List of topics and actions:');
 			console.log('');
 
-			Object.keys(commandMaps).forEach(function(commandKey) {
-				var description = commandMaps[commandKey].description;
-				if(description) {
+			Object.keys(commandMaps).forEach(function (commandKey) {
+				const description = commandMaps[commandKey].description;
+				if (description) {
 					console.log(_space(2) + _show(commandKey) + description);
 				}
 			});

@@ -1,20 +1,19 @@
-const Lego = require('../src/lego.js');
-const assert = require('assert');
-const util = require('util');
+import Lego from '../src';
+import assert from 'assert';
 
-describe('data mapper', function () {
+describe('parse', function () {
 	it('simple rows', function () {
-		var rows = [{
+		const rows = [{
 			id: 1,
-			name: 'Test 1'
+			name: 'Test 1',
 		}, {
 			id: 2,
-			name: 'Test 2'
+			name: 'Test 2',
 		}];
 
-		var objects = Lego.parse(rows, [{
+		const objects = Lego.parse(rows, [{
 			id: 'id',
-			name: 'name'
+			name: 'name',
 		}]);
 
 		assert.equal(objects.length, 2);
@@ -24,9 +23,8 @@ describe('data mapper', function () {
 		assert.equal(objects[1].name, 'Test 2');
 	});
 
-
 	it('objects with 1 relation', function () {
-		var rows = [{
+		const rows = [{
 			id: 1,
 			test_id: 1,
 			name: 'Test 1'
@@ -36,7 +34,7 @@ describe('data mapper', function () {
 			name: 'Test 2'
 		}];
 
-		var objects = Lego.parse(rows, [{
+		const objects = Lego.parse(rows, [{
 			id: 'id',
 			tests: [{
 				id: 'test_id',
@@ -50,7 +48,7 @@ describe('data mapper', function () {
 	});
 
 	it('object with 2 relations', function () {
-		var rows = [{
+		const rows = [{
 			id: 1,
 			test_id: 1,
 			name: 'Test 1',
@@ -64,7 +62,7 @@ describe('data mapper', function () {
 			foo_name: 'Foo 1'
 		}];
 
-		var objects = Lego.parse(rows, [{
+		const objects = Lego.parse(rows, [{
 			id: 'id',
 			tests: [{
 				id: 'test_id',
@@ -88,7 +86,7 @@ describe('data mapper', function () {
 	});
 
 	it('object with 3 relations and 1 null', function () {
-		var rows = [{
+		const rows = [{
 			id: 1,
 			test_id: 1,
 			name: 'Test 1',
@@ -106,7 +104,7 @@ describe('data mapper', function () {
 			bar_name: null
 		}];
 
-		var objects = Lego.parse(rows, [{
+		const objects = Lego.parse(rows, [{
 			id: 'id',
 			tests: [{
 				id: 'test_id',
@@ -136,7 +134,7 @@ describe('data mapper', function () {
 	});
 
 	it('object with 1 relation but multiple rows', function () {
-		var rows = [{
+		const rows = [{
 			id: 1,
 			test_id: 1,
 			name: 'Test 1'
@@ -154,7 +152,7 @@ describe('data mapper', function () {
 			name: 'Test 4'
 		}];
 
-		var objects = Lego.parse(rows, [{
+		const objects = Lego.parse(rows, [{
 			id: 'id',
 			tests: [{
 				id: 'test_id',

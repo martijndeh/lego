@@ -12,6 +12,8 @@ Lego embraces SQL instead of adding yet another abstraction layer. It supports c
 only PostgreSQL is supported. Feel free to send pull requests! :-)
 
 ```js
+import Lego from 'lego-sql';
+
 Lego.sql `SELECT * FROM users WHERE name = ${name}`;
 ```
 
@@ -49,73 +51,38 @@ WHERE
 ## Quick start
 
 Lego uses ES6 template strings. From the template string, a parameterized
-query is created and passed to the driver. This takes care of sanitizing
-the input.
+query is created and passed to the driver where the input is sanitized.
 
-A Lego instance is then-able. This means it's executed when `.then()` is
+A Lego instance is then-able. This means the query is executed when `.then()` is
 invoked. You can use it in the following way:
 ```js
 Lego.sql `INSERT INTO projects (name) VALUES (${name}) RETURNING *`
-	.then(function (projects) {
+	.then((projects) => {
 		return Lego.sql `INSERT INTO project_settings (project_id) VALUES (${projects[0].id})`;
 	})
-	.then(function () {
+	.then(() => {
 		// Ready! :-)
 	})
 ```
 
-You can also create an instance and call `Lego#add` multiple times to
-construct a more advanced query:
+You can also nest arrays of Lego instances:
 ```js
-var lego = Lego.sql();
-lego.append `SELECT * FROM users`;
-lego.append `INNER JOIN projects ON projects.user_id = users.id`;
+Lego.sql `INSERT INTO projects (name) VALUES ${projects.map((project) => {
+		return Lego.sql `(${project.name})`;
+	})}`;
+```
 
-if(sort) {
-	lego.append `ORDER BY projects.name`;
+Which creates the query `INSERT INTO projects (name) VALUES ($1), ($2)`.
+
+In some cases, you want to append a statement:
+
+```js
+const lego = Lego.sql `SELECT * FROM tests`;
+
+if (shouldOrderBy) {
+	lego.append `ORDER BY value`;
 }
 
-lego.append `LIMIT 10`;
-```
-
-You can combine different Lego instances:
-```js
-var lego = Lego.sql();
-lego.append `SELECT * FROM users`;
-
-var whereLego = Lego.sql `WHERE users.name = ${name}`;
-lego.add(whereLego);
-
-var sortLego = Lego.sql `ORDER BY users.created_at DESC`;
-lego.add(sortLego);
-
-lego.exec();
-```
-
-You can chain calls, if you want:
-```js
-Lego.sql `SELECT * FROM users WHERE name = 'Martijn' LIMIT 1`
-	.first()
-	.then(function (user) {
-		//
-	});
-```
-
-Obviously, you can write multi-line strings, like the following:
-```js
-Lego.sql `SELECT
-		*
-	FROM
-		users
-	WHERE
-		role = 'admin'
-	LIMIT 1`;
-```
-(I'm not too sure about the indentation best practices when writing multi-line SQL strings though.)
-
-You can also nest arrays of lego instances:
-```js
-Lego.sql `INSERT INTO projects (name) VALUES ${projects.map((project) => Lego.sql `(${project.name})`)}`;
 ```
 
 In `DELETE`, `UPDATE` and `INSERT` queries, when not using a `RETURNING` clause, the number of affected rows is resolved. Otherwise, the rows are resolved.
@@ -125,7 +92,7 @@ In `DELETE`, `UPDATE` and `INSERT` queries, when not using a `RETURNING` clause,
 Lego makes it easy to parse rows and transform them to objects. Consider the below rows:
 
 ```js
-var rows = [{
+const rows = [{
 	id: 1,
 	test_id: 1,
 	test_name: 'Test 1'
@@ -139,7 +106,7 @@ var rows = [{
 The rows are flat but do contain 1 root object and 2 child objects. Something like the below:
 
 ```js
-var objects = [{
+const objects = [{
 	id: 1,
 	tests: [{
 		id: 1,
@@ -164,37 +131,63 @@ Lego.parse(rows, [{
 
 ## Transactions
 
-Transactions are also supported. In the `callback` make sure to return a promise. Based on it being fulfilled or rejected the transaction will, respectively, be commited or rolled back.
+Transactions are also supported. You can either chain the calls manually by returning a promise in the transaction's `callback`:
 
 ```js
-Lego.transaction(function (lego) {
-	return lego.sql `UPDATE money SET value = value + 100`
-		.then(function () {
-			return lego.sql `UPDATE money SET value = value - 100`;
+Lego.transaction((transaction) => {
+	return transaction.sql `UPDATE money SET value = value + 100`
+		.then(() => {
+			return transaction.sql `UPDATE money SET value = value - 100`;
 		});
 });
 ```
+
+Or use the transaction queue which invokes the queries in series (make sure to *not* return a promise!):
+
+```js
+Lego.transaction((transaction) => {
+	transaction.sql `UPDATE money SET value = value + 100`;
+	transaction.sql `UPDATE money SET value = value - 100`;
+});
+```
+
+Alternatively, you can construct regular Lego instances and assign them to the transaction:
+
+```js
+Lego.transaction((transaction) => {
+	return Lego
+		.sql `UPDATE money SET value = value + 100`
+		.transacting(transaction)
+		.then(() => {
+			return Lego
+				.sql `UPDATE money SET value = value - 100`
+				.transacting(transaction);
+		});
+});
+```
+
+`Lego#transaction` returns a promise with the result of the transaction's `callback`.
 
 ## Migrations
 
 To create a migration you can simply invoke `lego migrate:make`. This creates an empty migration with an `up` and a `down` method.
 
-Migrations come with a queue so you can easily execute multiple queries (if you're not interested in their return values). The queries are executed in sequential order (and not in parallel).
+Migrations are executed in a transaction which is passed in both the `up` and `down` method.
 
 ```js
 exports = module.exports = {
-	up: function(lego, queue) {
-		queue.add `CREATE TABLE tests (name TEXT UNIQUE, value INTEGER)`;
-		queue.add `INSERT INTO tests VALUES ('Martijn', 123)`;
+	up: function(transaction) {
+		transaction.sql `CREATE TABLE tests (name TEXT UNIQUE, value INTEGER)`;
+		transaction.sql `INSERT INTO tests VALUES ('Martijn', 123)`;
 	},
 
 	down: function(lego, queue) {
-		queue.add `DROP TABLE tests`;
+		transaction.sql `DROP TABLE tests`;
 	}
 };
 ```
 
-Lego creates a table to keep track of all the migrations. This migrations table is created in it's own schema, so don't worry about any collisions (unless you are using the lego schema).
+Lego creates a table to keep track of all the migrations. This migrations table is created in it's own schema, so don't worry about any collisions (unless you are using the `lego` schema).
 
 ## CLI
 
@@ -206,14 +199,3 @@ lego migrate:latest                  Migrates to the latest migration.
 lego migrate:rollback                Rolls back the previous migration.
 lego migrate:<version>               Migrates or rolls back to the target migration <version>.
 ```
-
-### Roadmap
-
-- Implement decorators as soon as they enter phase 2.
-- Implement additional drivers (mysql, etc).
-- Add a seeds feature similar to the migrations.
-- Extend the public API e.g. add `Lego#pluck`.
-
-### Final note
-
-JSHint W030 is disabled. This was causing an error in `lego.add ..` syntax.

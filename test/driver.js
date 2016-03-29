@@ -1,10 +1,12 @@
-const Lego = require('../src/lego.js');
-const assert = require('assert');
+import Lego from '../src';
+import assert from 'assert';
+import { setPoolIdleTimeout } from '../src/driver/postgres';
+import { createDriver, getSingleton } from '../src/driver';
 
-describe('query', function () {
+describe('driver', function () {
 	it('exec and resolves', function () {
-		var lego = Lego.sql `SELECT 1 as count`;
-		return lego.exec()
+		const lego = Lego.sql `SELECT 1 as count`;
+		return lego
 			.then(function (rows) {
 				assert.equal(rows.length, 1);
 				assert.equal(rows[0].count, '1');
@@ -12,8 +14,8 @@ describe('query', function () {
 	});
 
 	it('exec and rejects', function () {
-		var lego = Lego.sql `SELECT fail`;
-		return lego.exec()
+		const lego = Lego.sql `SELECT fail`;
+		return lego
 			.then(assert.fail)
 			.catch(function (error) {
 				assert.equal(error.message, 'column "fail" does not exist');
@@ -21,7 +23,7 @@ describe('query', function () {
 	});
 
 	it('resolves first result', function () {
-		var lego = Lego.sql `SELECT 1 as count`;
+		const lego = Lego.sql `SELECT 1 as count`;
 		return lego.first()
 			.then(function (row) {
 				assert.equal(row.length, undefined);
@@ -30,7 +32,7 @@ describe('query', function () {
 	});
 
 	it('resolves null result with first on 0 rows', function () {
-		var lego = Lego.sql `SELECT 1 WHERE 1 <> 1`;
+		const lego = Lego.sql `SELECT 1 WHERE 1 <> 1`;
 		return lego.first()
 			.then(function (row) {
 				assert.equal(row, null);
@@ -46,12 +48,13 @@ describe('query', function () {
 	});
 
 	it('can set pool idle timeout', function () {
-		var driver = Lego.Driver('postgres://localhost:1337');
-		driver.setPoolIdleTimeout(500);
+		assert.doesNotThrow(() => {
+			setPoolIdleTimeout(500);
+		});
 	});
 
 	it('connect error', function () {
-		var driver = Lego.Driver('postgres://localhost:1337');
+		const driver = createDriver('postgres://localhost:1337');
 		driver.connect()
 			.then(assert.fail)
 			.catch(function (error) {
@@ -61,25 +64,21 @@ describe('query', function () {
 
 	it('undefined database url', function () {
 		assert.throws(function () {
-			Lego.Driver(null);
-		}, function(error) {
+			createDriver(null);
+		}, function (error) {
 			return error.message === 'No DATABASE_URL provided.';
 		});
 	});
 
 	it('unsupported driver', function () {
 		assert.throws(function () {
-			Lego.Driver('mysql://localhost');
-		}, function(error) {
-			return error.message === 'Unsupported driver in DATABASE_URL.';
+			createDriver('mysql://localhost');
+		}, function (error) {
+			return error.message === 'Unsupported driver \'mysql:\' in DATABASE_URL.';
 		});
 	});
 
-	it('class call check', function () {
-		assert.throws(function () {
-			Lego.Driver.Postgres();
-		}, function(error) {
-			return error.message === 'Cannot call a class as a function';
-		});
+	it('get singleton', function () {
+		assert.strictEqual(getSingleton(), getSingleton());
 	});
 });

@@ -1,26 +1,25 @@
 const pg = require('pg');
 const debug = require('debug')('lego:sql');
 
-exports = module.exports = class PostgresDriver {
-	constructor(databaseURL) {
-		this._databaseURL = databaseURL;
-	}
+export function setPoolIdleTimeout(timeout) {
+	pg.defaults.poolIdleTimeout = timeout;
+}
 
-	setPoolIdleTimeout(timeout) {
-		pg.defaults.poolIdleTimeout = timeout;
+export class PostgresDriver {
+	constructor(databaseURL) {
+		this.$$databaseURL = databaseURL;
 	}
 
 	connect() {
-		var self = this;
-		return new Promise(function(resolve, reject) {
-			pg.connect(self._databaseURL, function(error, client, done) {
-				if(error) {
+		return new Promise((resolve, reject) => {
+			pg.connect(this.$$databaseURL, function (error, client, done) {
+				if (error) {
 					reject(error);
 				}
 				else {
 					resolve({
 						client: client,
-						done: done
+						done: done,
 					});
 				}
 			});
@@ -30,14 +29,14 @@ exports = module.exports = class PostgresDriver {
 	query(client, text, parameters) {
 		debug(text, parameters);
 
-		return new Promise(function(resolve, reject) {
-			client.query(text, parameters, function(error, result) {
-				if(error) {
+		return new Promise(function (resolve, reject) {
+			client.query(text, parameters, function (error, result) {
+				if (error) {
 					error.query = text;
 					reject(error);
 				}
 				else {
-					if((result.oid === 0 || isNaN(result.oid) || result.oid === null) && result.fields.length === 0) {
+					if ((result.oid === 0 || isNaN(result.oid) || result.oid === null) && result.fields.length === 0) {
 						resolve(result.rowCount);
 					}
 					else {
@@ -49,16 +48,15 @@ exports = module.exports = class PostgresDriver {
 	}
 
 	exec(text, parameters) {
-		var self = this;
 		return this.connect()
-			.then(function (driver) {
-				return self.query(driver.client, text, parameters)
-					.then(function (result) {
+			.then((driver) => {
+				return this.query(driver.client, text, parameters)
+					.then((result) => {
 						driver.done();
 
 						return result;
 					})
-					.catch(function (error) {
+					.catch((error) => {
 						driver.done();
 
 						throw error;
@@ -67,21 +65,20 @@ exports = module.exports = class PostgresDriver {
 	}
 
 	beginTransaction() {
-		var self = this;
 		return this.connect()
-			.then(function (driver) {
-				return self.query(driver.client, 'BEGIN', [])
+			.then((driver) => {
+				return this.query(driver.client, 'BEGIN', [])
 					.then(function () {
 						return driver;
 					});
 			});
 	}
 
-	commitTransaction(transaction) {
-		return this.query(transaction, 'COMMIT', []);
+	commitTransaction(client) {
+		return this.query(client, 'COMMIT', []);
 	}
 
-	rollbackTransaction(transaction) {
-		return this.query(transaction, 'ROLLBACK', []);
+	rollbackTransaction(client) {
+		return this.query(client, 'ROLLBACK', []);
 	}
 };

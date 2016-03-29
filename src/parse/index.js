@@ -1,26 +1,23 @@
-const util = require('util');
-const debug = require('debug')('lego:parse');
-
 function createStateID(id, parents) {
 	return ['object', ...parents, id].join(':');
 }
 
-exports = module.exports = function (rows, definition) {
-	var isArray = Array.isArray(definition);
-	var result = isArray ? [] : {};
+export default function parse(rows, definition) {
+	const isArray = Array.isArray(definition);
+	let result = isArray ? [] : {};
 
-	var columns = {};
+	const columns = {};
 
 	function parseColumn(object_, parents) {
-		var object = Array.isArray(object_) ? object_[0] : object_;
+		const object = Array.isArray(object_) ? object_[0] : object_;
 
-		Object.keys(object).forEach(function(propertyName) {
-			var column = object[propertyName];
-			if(typeof column == 'string') {
+		Object.keys(object).forEach(function (propertyName) {
+			const column = object[propertyName];
+			if (typeof column == 'string') {
 				columns[column] = {
 					name: propertyName,
 					parents: parents,
-					isArray: Array.isArray(object_)
+					isArray: Array.isArray(object_),
 				};
 			}
 			else {
@@ -34,11 +31,11 @@ exports = module.exports = function (rows, definition) {
 	let states = {};
 	let metadata = {};
 
-	rows.forEach(function(row) {
-		let rootState 		= null;
-		let currentState 	= null;
-		let currentStateID 	= null;
-		let isNull 			= false;
+	rows.forEach(function (row) {
+		let rootState		= null;
+		let currentState	= null;
+		let currentStateID	= null;
+		let isNull			= false;
 
 		function findMetadata(id) {
 			return metadata[id];
@@ -57,8 +54,8 @@ exports = module.exports = function (rows, definition) {
 			const column = columns[columnName];
 
 			// If this is a primary key...
-			if(column.name == 'id') {
-				if(row[columnName] === null) {
+			if (column.name == 'id') {
+				if (row[columnName] === null) {
 					isNull = true;
 				}
 				else {
@@ -66,22 +63,22 @@ exports = module.exports = function (rows, definition) {
 
 					const stateID = createStateID(row[columnName], column.parents);
 
-					if(column.parents.length === 0) {
+					if (column.parents.length === 0) {
 						// find the root state with id $id—or create something new
 						rootState = findState(stateID);
-						if(!rootState) {
+						if (!rootState) {
 							rootState = {};
 
 							createState(stateID, rootState, {
 								parents: column.parents,
-								parent: result
+								parent: result,
 							});
 
-							if(isArray) {
+							if (isArray) {
 								result.push(rootState);
 							}
 							else {
-								if(result && Object.keys(result).length > 0) {
+								if (result && Object.keys(result).length > 0) {
 									throw new Error('The root object already exists, but a new object with a different id found. Should the root object in your definition be an array instead?');
 								}
 
@@ -89,12 +86,12 @@ exports = module.exports = function (rows, definition) {
 							}
 						}
 
-						currentState 	= rootState;
-						currentStateID 	= stateID;
+						currentState	= rootState;
+						currentStateID	= stateID;
 					}
 					else {
 						let state = findState(stateID);
-						if(!state) {
+						if (!state) {
 							// We need to find the current state. Either as
 							// 1) a parent state of the currentState,
 							// 2) a child state of the currentState
@@ -102,12 +99,12 @@ exports = module.exports = function (rows, definition) {
 							let currentStateMetadata = findMetadata(currentStateID);
 							let parentName = column.parents[column.parents.length - 1];
 
-							if(column.parents.length == 1) {
+							if (column.parents.length == 1) {
 								// Child of root state
 								state = {};
 
-								if(!rootState[parentName]) {
-									if(column.isArray) {
+								if (!rootState[parentName]) {
+									if (column.isArray) {
 										rootState[parentName] = [state];
 									}
 									else {
@@ -115,7 +112,7 @@ exports = module.exports = function (rows, definition) {
 									}
 								}
 								else {
-									if(column.isArray) {
+									if (column.isArray) {
 										rootState[parentName].push(state);
 									}
 									else {
@@ -125,15 +122,15 @@ exports = module.exports = function (rows, definition) {
 
 								createState(stateID, state, {
 									parents: column.parents,
-									parent: rootState
+									parent: rootState,
 								});
 							}
-							else if(currentStateMetadata.parents.length == column.parents.length - 1) {
+							else if (currentStateMetadata.parents.length == column.parents.length - 1) {
 								// This is a child
 								state = {};
 
-								if(!currentState[parentName]) {
-									if(column.isArray) {
+								if (!currentState[parentName]) {
+									if (column.isArray) {
 										currentState[parentName] = [state];
 									}
 									else {
@@ -141,7 +138,7 @@ exports = module.exports = function (rows, definition) {
 									}
 								}
 								else {
-									if(column.isArray) {
+									if (column.isArray) {
 										currentState[parentName].push(state);
 									}
 									else {
@@ -151,10 +148,10 @@ exports = module.exports = function (rows, definition) {
 
 								createState(stateID, state, {
 									parents: column.parents,
-									parent: currentState
+									parent: currentState,
 								});
 							}
-							else if(currentStateMetadata.parents.length - 1 == column.parents.length) {
+							else if (currentStateMetadata.parents.length - 1 == column.parents.length) {
 								let offset = 1;
 
 								while (column.parents[column.parents.length - offset] != currentStateMetadata.parents[currentStateMetadata.parents.length - 1 - 1]) {
@@ -168,8 +165,8 @@ exports = module.exports = function (rows, definition) {
 								// This is a parent.
 								state = {};
 
-								if(!currentStateMetadata.parent[parentName]) {
-									if(column.isArray) {
+								if (!currentStateMetadata.parent[parentName]) {
+									if (column.isArray) {
 										currentStateMetadata.parent[parentName] = [state];
 									}
 									else {
@@ -177,7 +174,7 @@ exports = module.exports = function (rows, definition) {
 									}
 								}
 								else {
-									if(column.isArray) {
+									if (column.isArray) {
 										currentStateMetadata.parent[parentName].push(state);
 									}
 									else {
@@ -187,7 +184,7 @@ exports = module.exports = function (rows, definition) {
 
 								createState(stateID, state, {
 									parents: column.parents,
-									parent: currentStateMetadata.parent
+									parent: currentStateMetadata.parent,
 								});
 							}
 							else {
@@ -195,18 +192,17 @@ exports = module.exports = function (rows, definition) {
 							}
 						}
 
-						currentState 	= state;
-						currentStateID 	= stateID;
+						currentState	= state;
+						currentStateID	= stateID;
 					}
 				}
 			}
 
-			if(!isNull) {
+			if (!isNull) {
 				currentState[column.name] = row[columnName];
 			}
 		});
 	});
 
-	debug(util.inspect(result, {depth: null}));
 	return result;
-};
+}

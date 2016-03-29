@@ -1,31 +1,34 @@
-const Lego = require('../src/lego.js');
-const assert = require('assert');
+import Lego from '../src';
+import { default as LegoInstance } from '../src/lego';
 
-describe('create', function () {
+import assert from 'assert';
+
+describe('query', function () {
 	it('without parameters', function () {
-		var lego = Lego.sql `SELECT * FROM users`;
+		const lego = Lego.sql `SELECT * FROM users`;
 
-		var query = lego.toQuery();
+		const query = lego.$toQuery();
+
 		assert.equal(query.text, 'SELECT * FROM users');
 		assert.equal(query.parameters.length, 0);
 	});
 
 	it('with 1 parameter', function () {
-		var name = 'Martijn';
-		var lego = Lego.sql `SELECT * FROM users WHERE name = ${name}`;
+		const name = 'Martijn';
+		const lego = Lego.sql `SELECT * FROM users WHERE name = ${name}`;
 
-		var query = lego.toQuery();
+		const query = lego.$toQuery();
 		assert.equal(query.text, 'SELECT * FROM users WHERE name = $1');
 		assert.equal(query.parameters.length, 1);
 		assert.equal(query.parameters[0], name);
 	});
 
 	it('with 2 parameter', function () {
-		var name = 'Martijn';
-		var age = 27;
-		var lego = Lego.sql `SELECT * FROM users WHERE name = ${name} AND age = ${age}`;
+		const name = 'Martijn';
+		const age = 27;
+		const lego = Lego.sql `SELECT * FROM users WHERE name = ${name} AND age = ${age}`;
 
-		var query = lego.toQuery();
+		const query = lego.$toQuery();
 		assert.equal(query.text, 'SELECT * FROM users WHERE name = $1 AND age = $2');
 		assert.equal(query.parameters.length, 2);
 		assert.equal(query.parameters[0], name);
@@ -34,65 +37,44 @@ describe('create', function () {
 
 	it('with invalid parameters', function () {
 		assert.throws(function () {
-			Lego.sql(['SELECT * FROM users WHERE name = ', 'AND age = ', ''], 'Martijn');
-		}, function(error) {
-			return error.message === 'Invalid number of parameters in Lego#add.';
+			Lego.sql();
+		}, function (error) {
+			return error.message === 'Lego#sql invoked with invalid arguments. This is likely because you are not using template strings e.g.: Lego.sql \`SELECT 1\`.';
 		});
 	});
 
-	it('empty and calling add', function () {
-		var lego = Lego.sql();
-		lego.append `SELECT * FROM users`;
-
-		var query = lego.toQuery();
-		assert.equal(query.text, 'SELECT * FROM users');
-		assert.equal(query.parameters.length, 0);
-	});
-
-	it('new and calling add', function () {
-		var lego = Lego.sql `SELECT * FROM users`;
-		lego.append `WHERE name = "Martijn"`;
-
-		var query = lego.toQuery();
-		assert.equal(query.text, 'SELECT * FROM users\nWHERE name = "Martijn"');
-		assert.equal(query.parameters.length, 0);
-	});
-
-	it('chaining add calls', function () {
-		var query = Lego.sql `SELECT * FROM users`
-			.append `WHERE name = "Martijn"`
-			.toQuery();
-
-		assert.equal(query.text, 'SELECT * FROM users\nWHERE name = "Martijn"');
-		assert.equal(query.parameters.length, 0);
-	});
-
-	it('merge queries', function () {
-		var name = 'Martijn';
-
-		var lego = Lego.sql `SELECT * FROM users`;
-		var whereLego = Lego.sql `WHERE name = ${name}`;
-		lego.add(whereLego);
-
-		var query = lego.toQuery();
-		assert.equal(query.text, 'SELECT * FROM users\nWHERE name = $1');
-		assert.equal(query.parameters.length, 1);
-		assert.equal(query.parameters[0], name);
-	});
-
-	it('class call check', function () {
+	it('with invalid parameters (2)', function () {
 		assert.throws(function () {
-			Lego.LegoInstance();
-		}, function(error) {
-			return error.message === 'Cannot call a class as a function';
+			Lego.sql('SELECT 1');
+		}, function (error) {
+			return error.message === 'Lego#sql invoked with invalid arguments. This is likely because you are not using template strings e.g.: Lego.sql \`SELECT 1\`.';
+		});
+	});
+
+	describe('append', () => {
+		it('should add space', () => {
+			const lego = Lego.sql `SELECT * FROM users`;
+			lego.append `ORDER BY age`;
+
+			const query = lego.$toQuery();
+			assert.equal(query.text, 'SELECT * FROM users ORDER BY age');
+		});
+
+		it('', () => {
+			const name = 'Martijn';
+			const lego = Lego.sql `SELECT * FROM users WHERE name = ${name}`;
+			lego.append `ORDER BY age`;
+
+			const query = lego.$toQuery();
+			assert.equal(query.text, 'SELECT * FROM users WHERE name = $1 ORDER BY age');
 		});
 	});
 
 	describe('sub instances', () => {
-		it('Regular', function () {
+		it('merge regular', function () {
 			const name = 'Martijn';
 			const lego = Lego.sql `INSERT INTO users (name) ${Lego.sql `VALUES (${name})`}`;
-			const query = lego.toQuery();
+			const query = lego.$toQuery();
 
 			assert.equal(query.text, 'INSERT INTO users (name) VALUES ($1)');
 			assert.equal(query.parameters[0], name);
@@ -104,20 +86,30 @@ describe('create', function () {
 			const sortLego = Lego.sql `ORDER BY users.created_at DESC`;
 			const lego = Lego.sql `SELECT * FROM users ${whereLego} ${sortLego}`;
 
-			const query = lego.toQuery();
+			const query = lego.$toQuery();
 			assert.equal(query.text, 'SELECT * FROM users WHERE users.name = $1 ORDER BY users.created_at DESC');
 			assert.equal(query.parameters[0], 'Martijn');
 		});
 
-		it('Lego map', () => {
+		it('Lego map 2 values', () => {
 			const names = ['Martijn', 'Bob'];
 			const lego = Lego.sql `INSERT INTO users (name) VALUES ${names.map((name) => Lego.sql `(${name})`)}`;
 
-			const query = lego.toQuery();
+			const query = lego.$toQuery();
 
 			assert.equal(query.text, 'INSERT INTO users (name) VALUES ($1), ($2)');
 			assert.equal(query.parameters[0], 'Martijn');
 			assert.equal(query.parameters[1], 'Bob');
+		});
+
+		it('Lego map 1 value', () => {
+			const names = ['Martijn'];
+			const lego = Lego.sql `INSERT INTO users (name) VALUES ${names.map((name) => Lego.sql `(${name})`)}`;
+
+			const query = lego.$toQuery();
+
+			assert.equal(query.text, 'INSERT INTO users (name) VALUES ($1)');
+			assert.equal(query.parameters[0], 'Martijn');
 		});
 	});
 

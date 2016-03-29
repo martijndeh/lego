@@ -15,5 +15,8 @@
 		"ignoreSingleLine": true,
 		"ignoreSingleValue": true
 	},
-	"requireShorthandArrowFunctions": false
+	"requireShorthandArrowFunctions": false,
+	"requirePaddingNewLinesAfterBlocks": {
+	    "allExcept": ["inCallExpressions"]
+	}
 }

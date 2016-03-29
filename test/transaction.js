@@ -1,5 +1,5 @@
-const Lego = require('../src/lego.js');
-const assert = require('assert');
+import Lego from '../src';
+import assert from 'assert';
 
 describe('transaction', function () {
 	beforeEach(function () {
@@ -11,8 +11,8 @@ describe('transaction', function () {
 	});
 
 	it('can commit', function () {
-		return Lego.transaction(function (lego) {
-				return Lego.sql `INSERT INTO tests (text, value) VALUES ('Martijn', 123) RETURNING *`
+		return Lego.transaction(function (transaction) {
+				return transaction.sql `INSERT INTO tests (text, value) VALUES ('Martijn', 123) RETURNING *`
 					.then(function (tests) {
 						assert.equal(tests.length, 1);
 						assert.equal(tests[0].text, 'Martijn');
@@ -30,14 +30,14 @@ describe('transaction', function () {
 	});
 
 	it('can rollback', function () {
-		return Lego.transaction(function (lego) {
-				return lego.sql `INSERT INTO tests (text, value) VALUES ('Martijn', 123) RETURNING *`
+		return Lego.transaction(function (transaction) {
+				return transaction.sql `INSERT INTO tests (text, value) VALUES ('Martijn', 123) RETURNING *`
 					.then(function (tests) {
 						assert.equal(tests.length, 1);
 						assert.equal(tests[0].text, 'Martijn');
 						assert.equal(tests[0].value, 123);
 
-						return lego.sql `INSERT INTO tests (text, value) VALUES ('Martijn', 123) RETURNING *`;
+						return transaction.sql `INSERT INTO tests (text, value) VALUES ('Martijn', 123) RETURNING *`;
 					});
 			})
 			.then(assert.fail)
@@ -51,13 +51,41 @@ describe('transaction', function () {
 			});
 	});
 
-	it('throw error if not returning promise', function () {
+	it('should throw error in empty transaction', function () {
 		return Lego.transaction(function () {
 				// We return nothing so this fails.
 			})
 			.then(assert.fail)
 			.catch(function (error) {
-				assert.equal(error.message, 'In Lego#transaction(..) you must return a Promise.');
+				assert.equal(error.message, '0 queries were found in Lego#transaction\'s callback.');
+			});
+	});
+
+	it('can execute multiple statements', function () {
+		return Lego
+			.transaction((transaction) => {
+				transaction.sql `INSERT INTO tests (text, value) VALUES ('Martijn', 1)`;
+				transaction.sql `UPDATE tests SET value = 2 WHERE value = 1`;
+				transaction.sql `UPDATE tests SET value = 3 WHERE value = 2`;
+			})
+			.then(() => {
+				return Lego.sql `SELECT * FROM tests`.first();
+			})
+			.then((test) => {
+				assert.equal(test.value, 3);
+				assert.equal(test.text, 'Martijn');
+			});
+	});
+
+	it('cannot execute multiple statements and return a promise', function () {
+		return Lego
+			.transaction((transaction) => {
+				transaction.sql `INSERT INTO tests (text, value) VALUES ('Martijn', 1)`;
+				return transaction.sql `INSERT INTO tests (text, value) VALUES ('Martijn', 1)`;
+			})
+			.then(assert.fail)
+			.catch((error) => {
+				assert.equal(error.message, 'A promise was returned in Lego#transaction\'s callback, but multiple statements were invoked.');
 			});
 	});
 });

@@ -1,8 +1,9 @@
 {
   "name": "lego-sql",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "A lightweight SQL (string) builder using ES6 template strings. Lego embraces SQL instead of adding yet another abstraction layer.",
   "main": "lib/index.js",
+  "jsnext:main": "src/index.js",
   "scripts": {
     "build": "babel src -d lib",
     "coverage": "istanbul cover _mocha -- --compilers js:babel-register --recursive ./test/*.js",
@@ -19,7 +20,7 @@
     "url": "https://github.com/martijndeh/lego/issues"
   },
   "bin": {
-    "lego": "lib/bin/cli.js"
+    "lego": "lib/bin/script.js"
   },
   "homepage": "https://github.com/martijndeh/lego#readme",
   "devDependencies": {
@@ -32,8 +33,7 @@
     "babel-register": "^6.7.2",
     "blanket": "^1.2.1",
     "coveralls": "^2.11.6",
-    "istanbul": "^0.4.2",
-    "jscoverage": "^0.6.0",
+    "istanbul": "^1.0.0-alpha.2",
     "mocha": "^2.3.4",
     "mocha-lcov-reporter": "^1.0.0",
     "sinon": "^1.17.2"

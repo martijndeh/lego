@@ -1,5 +1,5 @@
-const Lego = require('../src/lego.js');
-const assert = require('assert');
+import Lego from '../src';
+import assert from 'assert';
 
 describe('result', function () {
 	beforeEach(() => {

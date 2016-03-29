@@ -1,27 +1,35 @@
-const url = require('url');
+import url from 'url';
+import { PostgresDriver } from './postgres/index.js';
 
-exports = module.exports = DriverFactory;
-
-function DriverFactory(databaseURL) {
-	if(!databaseURL) {
+export function createDriver(databaseURL) {
+	if (!databaseURL) {
 		throw new Error('No DATABASE_URL provided.');
 	}
 
 	let parse = url.parse(databaseURL);
-	let driverClass = null;
+	let driver = null;
 
-	switch(parse.protocol) {
-		case 'pg:':
-		case 'postgres:':
-			driverClass = DriverFactory.Postgres;
-			break;
+	switch (parse.protocol) {
+	case 'pg:':
+	case 'postgres:':
+		driver = new PostgresDriver(databaseURL);
+		break;
 	}
 
-	if(!driverClass) {
-		throw new Error('Unsupported driver in DATABASE_URL.');
+	if (!driver) {
+		throw new Error(`Unsupported driver '${parse.protocol}' in DATABASE_URL.`);
 	}
 
-	return new driverClass(databaseURL);
+	return driver;
 }
 
-DriverFactory.Postgres = require('./postgres');
+let driver = null;
+
+export function getSingleton() {
+	if (driver === null) {
+		const { DATABASE_URL } = process.env;
+		driver = createDriver(DATABASE_URL);
+	}
+
+	return driver;
+}
