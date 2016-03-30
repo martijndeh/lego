@@ -18,6 +18,8 @@ export default class Lego {
 			let i;
 			let il;
 
+			const isAppending = this.$$query.length;
+
 			// If there are parameters we need to check what type every item is. Some types, like
 			// a Lego instance or an array of Lego instances, should be treated differently.
 
@@ -59,7 +61,13 @@ export default class Lego {
 					}
 				}
 				else {
-					this.$$query.push(string);
+					if (this.$$query.length && isAppending) {
+						this.$$query = [...this.$$query.slice(0, -1), this.$$query.slice(-1) + ' ' + string];
+					}
+					else {
+						this.$$query.push(string);
+					}
+
 					this.$$parameters.push(parameter);
 				}
 			}
@@ -70,7 +78,7 @@ export default class Lego {
 		else {
 			if (this.$$query.length) {
 				this.$$query = [...this.$$query.slice(0, -1), this.$$query.slice(-1) + ' ' + strings[0], ...strings.slice(1)];
-				this.$$parameters = [...this.$$parameters, ...parameters];
+				this.$$parameters.push(...parameters);
 			}
 			else {
 				this.$$query = strings;

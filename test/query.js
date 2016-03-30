@@ -60,13 +60,25 @@ describe('query', function () {
 			assert.equal(query.text, 'SELECT * FROM users ORDER BY age');
 		});
 
-		it('', () => {
+		it('append after parameter', () => {
 			const name = 'Martijn';
 			const lego = Lego.sql `SELECT * FROM users WHERE name = ${name}`;
 			lego.append `ORDER BY age`;
 
 			const query = lego.$toQuery();
 			assert.equal(query.text, 'SELECT * FROM users WHERE name = $1 ORDER BY age');
+		});
+
+		it('append with parameter after parameter', () => {
+			const name = 'Martijn';
+			const age = 18;
+
+			const lego = Lego.sql `SELECT * FROM tests WHERE name = ${name}`;
+			lego.append `AND age <> ${age}`;
+
+			const query = lego.$toQuery();
+			assert.equal(query.text, 'SELECT * FROM tests WHERE name = $1 AND age <> $2');
+			assert.deepEqual(query.parameters, [name, age]);
 		});
 	});
 
