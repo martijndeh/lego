@@ -34,12 +34,12 @@ WHERE
 	.then((rows) => {
 		return Lego.parse(rows, {
 			id: 'id',
-			created_at: 'created_at',
+			createdAt: 'created_at',
 			members: [{
 				id: 'member_id',
 				name: 'member_name',
 				email: 'member_email',
-				joined_at: 'member_joined_at'
+				joinedAt: 'member_joined_at'
 			}]
 		})
 	})
@@ -142,7 +142,7 @@ Lego.transaction((transaction) => {
 });
 ```
 
-Or use the transaction queue which invokes the queries in series (make sure to *not* return a promise!):
+Or use the transaction queue which invokes the queries in series (make sure to *not* return a promise when using the queue!):
 
 ```js
 Lego.transaction((transaction) => {
@@ -175,19 +175,23 @@ To create a migration you can simply invoke `lego migrate:make`. This creates an
 Migrations are executed in a transaction which is passed in both the `up` and `down` method.
 
 ```js
-exports = module.exports = {
-	up: function(transaction) {
-		transaction.sql `CREATE TABLE tests (name TEXT UNIQUE, value INTEGER)`;
-		transaction.sql `INSERT INTO tests VALUES ('Martijn', 123)`;
-	},
+export function up(transaction) {
+	transaction.sql `CREATE TABLE tests (name TEXT UNIQUE, value INTEGER)`;
+	transaction.sql `INSERT INTO tests VALUES ('Martijn', 123)`;
+}
 
-	down: function(lego, queue) {
-		transaction.sql `DROP TABLE tests`;
-	}
-};
+export function down(transaction) {
+	transaction.sql `DROP TABLE tests`;
+}
 ```
 
 Lego creates a table to keep track of all the migrations. This migrations table is created in it's own schema, so don't worry about any collisions (unless you are using the `lego` schema).
+
+To execute your migrations, you can add a run script to your `package.json`:
+
+```json
+"release": "node -r babel-register ./node_modules/.bin/lego migrate:latest",
+```
 
 ## CLI
 
