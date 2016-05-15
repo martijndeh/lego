@@ -74,10 +74,10 @@ describe('query', function () {
 			const age = 18;
 
 			const lego = Lego.sql `SELECT * FROM tests WHERE name = ${name}`;
-			lego.append `AND age <> ${age}`;
+			lego.append `AND age <> (${age})`;
 
 			const query = lego.$toQuery();
-			assert.equal(query.text, 'SELECT * FROM tests WHERE name = $1 AND age <> $2');
+			assert.equal(query.text, 'SELECT * FROM tests WHERE name = $1 AND age <> ($2)');
 			assert.deepEqual(query.parameters, [name, age]);
 		});
 	});

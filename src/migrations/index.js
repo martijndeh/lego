@@ -78,17 +78,13 @@ export default class Migrations {
 				else {
 					const versionString = zeroPad(version, 100);
 					const fileName = versionString + '.js';
-					fs.writeFile(path.join(migrationsDir, versionString + '.js'), `import Lego from 'lego-sql';
+					fs.writeFile(path.join(migrationsDir, versionString + '.js'), `export function up(transaction) {
+	//
+}
 
-exports = module.exports = {
-	up: function(transaction) {
-		//
-	},
-
-	down: function(transaction) {
-		//
-	}
-};`,
+export function down(transaction) {
+	//
+}`,
 					function (error) {
 						if (error) {
 							reject(error);
