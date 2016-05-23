@@ -80,6 +80,33 @@ describe('query', function () {
 			assert.equal(query.text, 'SELECT * FROM tests WHERE name = $1 AND age <> ($2)');
 			assert.deepEqual(query.parameters, [name, age]);
 		});
+
+		it('append with two parameters', () => {
+			const name = 'Martijn';
+			const age = 18;
+			const gender = 'male';
+
+			const lego = Lego.sql `SELECT * FROM tests WHERE name = ${name}`;
+			lego.append `AND age <> (${age}) AND gender = ${gender}`;
+
+			const query = lego.$toQuery();
+			assert.equal(query.text, 'SELECT * FROM tests WHERE name = $1 AND age <> ($2 ) AND gender = $3');
+			assert.deepEqual(query.parameters, [name, age, gender]);
+		});
+
+		it('append with three parameters', () => {
+			const name = 'Martijn';
+			const age = 18;
+			const gender = 'male';
+			const role = 'developer';
+
+			const lego = Lego.sql `SELECT * FROM tests WHERE name = ${name}`;
+			lego.append `AND age <> (${age}) AND gender = ${gender} AND role = ${role}`;
+
+			const query = lego.$toQuery();
+			assert.equal(query.text, 'SELECT * FROM tests WHERE name = $1 AND age <> ($2 ) AND gender = $3  AND role = $4');
+			assert.deepEqual(query.parameters, [name, age, gender, role]);
+		});
 	});
 
 	describe('sub instances', () => {

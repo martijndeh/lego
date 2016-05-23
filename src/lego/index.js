@@ -61,8 +61,8 @@ export default class Lego {
 					}
 				}
 				else {
-					if (this.$$query.length && isAppending) {
-						this.$$query = [...this.$$query.slice(0, -1), this.$$query.slice(-1) + ' ' + string];
+					if (isAppending) {
+						this.$$query = [...this.$$query.slice(0, -1), this.$$query.slice(-1) + ' ' + string, ''];
 					}
 					else {
 						this.$$query.push(string);
