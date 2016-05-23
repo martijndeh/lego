@@ -23,6 +23,29 @@ describe('parse', function () {
 		assert.equal(objects[1].name, 'Test 2');
 	});
 
+	it('simple rows with unused fields', function () {
+		const rows = [{
+			id: 1,
+			name: 'Test 1',
+			isNotUsed: true,
+		}, {
+			id: 2,
+			name: 'Test 2',
+			isNotUsed: true,
+		}];
+
+		const objects = Lego.parse(rows, [{
+			id: 'id',
+			name: 'name',
+		}]);
+
+		assert.equal(objects.length, 2);
+		assert.equal(objects[0].id, 1);
+		assert.equal(objects[0].name, 'Test 1');
+		assert.equal(objects[1].id, 2);
+		assert.equal(objects[1].name, 'Test 2');
+	});
+
 	it('objects with 1 relation', function () {
 		const rows = [{
 			id: 1,
