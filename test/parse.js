@@ -352,4 +352,40 @@ describe('parse', function () {
 		assert.equal(object.domains[0].tests && object.domains[0].tests.length, 1);
 		assert.equal(object.domains[1].tests && object.domains[1].tests.length, 1);
 	});
+
+	it('functions', () => {
+		const rows = [{
+			id: 1,
+			name: 'A',
+			count: '1',
+		}, {
+			id: 2,
+			name: 'B',
+			count: '2',
+		}, {
+			id: 3,
+			name: 'C',
+			count: '3',
+		}];
+
+		const objects = Lego.parse(rows, [{
+			id: 'id',
+			name: 'name',
+			count: ['count', (count) => parseInt(count)],
+		}]);
+
+		assert.deepStrictEqual(objects, [{
+			id: 1,
+			name: 'A',
+			count: 1,
+		}, {
+			id: 2,
+			name: 'B',
+			count: 2,
+		}, {
+			id: 3,
+			name: 'C',
+			count: 3,
+		}]);
+	});
 });

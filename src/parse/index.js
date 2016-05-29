@@ -20,12 +20,22 @@ export default function parse(rows, definition) {
 
 			const isString = typeof column === 'string';
 			const isArrayOfStrings = Array.isArray(column) && column.every((column) => typeof column === 'string');
+			const isFunction = Array.isArray(column) && column.length === 2 && typeof column[0] === 'string' && typeof column[1] === 'function';
 
 			if (isString || isArrayOfStrings) {
 				const columnName = isArrayOfStrings ? column[0] : column;
 				columns[columnName] = {
 					name: propertyName,
 					columnNames: isArrayOfStrings ? column : [columnName],
+					parents: parents,
+					isArray: Array.isArray(object_),
+				};
+			}
+			else if (isFunction) {
+				const columnName = column[0];
+				columns[columnName] = {
+					name: propertyName,
+					transformFunction: column[1],
 					parents: parents,
 					isArray: Array.isArray(object_),
 				};
@@ -210,7 +220,12 @@ export default function parse(rows, definition) {
 				}
 
 				if (!isNull) {
-					currentState[column.name] = row[columnName];
+					if (column.transformFunction) {
+						currentState[column.name] = column.transformFunction(row[columnName], row);
+					}
+					else {
+						currentState[column.name] = row[columnName];
+					}
 				}
 			}
 		});
