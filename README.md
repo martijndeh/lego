@@ -129,6 +129,10 @@ Lego.parse(rows, [{
 }]);
 ```
 
+The definition object describes how to map columns and rows to objects. Every property refers to a column
+name. You can also pass multiple column names to refer to multiple columns. This creates an aggregate
+primary key in the object.
+
 ## Transactions
 
 Transactions are also supported. You can either chain the calls manually by returning a promise in the transaction's `callback`:

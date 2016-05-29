@@ -1,4 +1,8 @@
-function createStateID(id, parents) {
+function createStateID(id, parents, row, columnNames) {
+	if (row && columnNames) {
+		return ['object', ...parents, ...columnNames.map((columnName) => row[columnName])].join(':');
+	}
+
 	return ['object', ...parents, id].join(':');
 }
 
@@ -13,9 +17,15 @@ export default function parse(rows, definition) {
 
 		Object.keys(object).forEach(function (propertyName) {
 			const column = object[propertyName];
-			if (typeof column == 'string') {
-				columns[column] = {
+
+			const isString = typeof column === 'string';
+			const isArrayOfStrings = Array.isArray(column) && column.every((column) => typeof column === 'string');
+
+			if (isString || isArrayOfStrings) {
+				const columnName = isArrayOfStrings ? column[0] : column;
+				columns[columnName] = {
 					name: propertyName,
+					columnNames: isArrayOfStrings ? column : [columnName],
 					parents: parents,
 					isArray: Array.isArray(object_),
 				};
@@ -62,7 +72,7 @@ export default function parse(rows, definition) {
 					else {
 						isNull = false;
 
-						const stateID = createStateID(row[columnName], column.parents);
+						const stateID = createStateID(row[columnName], column.parents, row, column.columnNames);
 
 						if (column.parents.length === 0) {
 							// find the root state with id $id—or create something new

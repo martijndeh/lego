@@ -311,4 +311,45 @@ describe('parse', function () {
 
 		assert.equal(object.tests[0].domains.length, 2);
 	});
+
+	it('aggregate columns', () => {
+		const rows = [{
+			id: 'aa9a0f38-1ce3-4798-ae27-4b92519759aa',
+			short_code: '2TD5',
+			name: 'musketeer.ai',
+			domain_id: 'badcafdd-b557-47ac-8194-56396c5e7fe2',
+			domain_name: '127.0.0.1:3000',
+			test_id: 'e5214a78-c51c-4359-b76c-17fef40bff28',
+			test_name: 'MyFirstTest',
+			test_participants: 0,
+		}, {
+			id: 'aa9a0f38-1ce3-4798-ae27-4b92519759aa',
+			short_code: '2TD5',
+			name: 'musketeer.ai',
+			domain_id: '6acaf2f0-4b4b-4ff1-902c-59737c282e0b',
+			domain_name: 'local.musketeer.ai:3000',
+			test_id: 'e5214a78-c51c-4359-b76c-17fef40bff28',
+			test_name: 'MyFirstTest',
+			test_participants: 31041,
+		}];
+
+		const object = Lego.parse(rows, {
+			id: 'id',
+			name: 'name',
+			short_code: 'short_code',
+			domains: [{
+				id: 'domain_id',
+				name: 'domain_name',
+				tests: [{
+					id: ['test_id', 'domain_id'],
+					name: 'test_name',
+					participants: 'test_participants',
+				}],
+			}],
+		});
+
+		assert.equal(object.domains && object.domains.length, 2);
+		assert.equal(object.domains[0].tests && object.domains[0].tests.length, 1);
+		assert.equal(object.domains[1].tests && object.domains[1].tests.length, 1);
+	});
 });
