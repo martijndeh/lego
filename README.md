@@ -2,22 +2,111 @@
 [![Build Status](https://travis-ci.org/martijndeh/lego.svg?branch=master)](https://travis-ci.org/martijndeh/lego)
 [![Coverage Status](https://coveralls.io/repos/martijndeh/lego/badge.svg?branch=master&service=github)](https://coveralls.io/github/martijndeh/lego?branch=master)
 
-A lightweight SQL (string) builder using ES6 template strings.
-
-```
-npm install lego-sql --save
-```
-
-Lego embraces SQL instead of adding yet another abstraction layer. It supports client pooling (using pg), data mapping, transactions and migrations including a cli. Currently,
-only PostgreSQL is supported. Feel free to send pull requests! :-)
+A lightweight SQL (string) builder using ES6 template strings. Lego embraces SQL instead of adding yet another abstraction layer.
 
 ```js
-import Lego from 'lego-sql';
-
 Lego.sql `SELECT * FROM users WHERE name = ${name}`;
 ```
 
-The data mapper allows you to easily parse rows from a query and construct objects based on a definition object:
+Lego does not do simple string concatenation. Instead, Lego creates the following prepared statement and passes `name` as parameter:
+
+```sql
+SELECT * FROM users WHERE name = $1
+```
+
+## Breaking changes in 2.0
+
+- `Lego#sql` now memoizes the query's result.
+- Queries in transactions now always get executed in series, in chronological order instead of the returned `Lego#sql` first and then the other queries.
+- The internal API has changed. If you were depending on private methods please review your code.
+
+## Quick start
+
+Lego uses ES6 template strings. From the template string, a parameterized query is created and passed
+to the driver. The database connection is taken from `process.env.DATABASE_URL`.
+
+```js
+Lego.sql `INSERT INTO projects (name) VALUES (${name}) RETURNING *`
+	.then((projects) => {
+		return Lego.sql `INSERT INTO project_settings (project_id) VALUES (${projects[0].id})`;
+	})
+	.then(() => {
+		// Ready! :-)
+	})
+```
+
+You can also nest arrays of Lego instances:
+```js
+Lego.sql `INSERT INTO projects (name) VALUES ${projects.map((project) => {
+	return Lego.sql `(${project.name})`;
+})}`;
+```
+
+Which creates and executes the query `INSERT INTO projects (name) VALUES ($1), ($2)`.
+
+### Lego#append
+
+In some cases, you want to append a statement:
+
+```js
+const lego = Lego.sql `SELECT * FROM tests`;
+
+if (shouldOrderBy) {
+	lego.append `ORDER BY value`;
+}
+```
+
+### Return value
+
+`Lego.sql` returns a Promise-like object and the query is executed when `.then(..)` is invoked. The Promise is resolved with the query's result.
+
+In `DELETE`, `UPDATE` and `INSERT` queries, when not using a `RETURNING` clause, the number of affected rows is resolved. Otherwise, the row data is resolved.
+
+## Data mapper
+
+Lego makes it easy to parse rows and transform them to objects. Consider the following rows:
+
+```js
+const rows = [{
+	id: 1,
+	test_id: 1,
+	test_name: 'Test 1'
+}, {
+	id: 1,
+	test_id: 2,
+	test_name: 'Test 2'
+}];
+```
+
+These rows are flat but do contain 1 root object and 2 child objects. Something like the below:
+
+```js
+const objects = [{
+	id: 1,
+	tests: [{
+		id: 1,
+		name: 'Test 1'
+	}, {
+		id: 2,
+		name: 'Test 2'
+	}]
+}]
+```
+
+You can transform the rows by simply passing the rows to Lego's parse system and providing a definition object:
+```js
+Lego.parse(rows, [{
+	id: 'id',
+	tests: [{
+		id: 'test_id',
+		name: 'test_name'
+	}]
+}]);
+```
+
+The definition object describes how to map columns and rows to objects. Every property refers to a column
+name. You can also pass multiple column names to refer to multiple columns. This creates an aggregate
+primary key in the object.
 
 ```js
 Lego.sql `SELECT
@@ -48,91 +137,6 @@ WHERE
 	})
 ```
 
-## Quick start
-
-Lego uses ES6 template strings. From the template string, a parameterized
-query is created and passed to the driver where the input is sanitized.
-
-A Lego instance is then-able. This means the query is executed when `.then()` is
-invoked. You can use it in the following way:
-```js
-Lego.sql `INSERT INTO projects (name) VALUES (${name}) RETURNING *`
-	.then((projects) => {
-		return Lego.sql `INSERT INTO project_settings (project_id) VALUES (${projects[0].id})`;
-	})
-	.then(() => {
-		// Ready! :-)
-	})
-```
-
-You can also nest arrays of Lego instances:
-```js
-Lego.sql `INSERT INTO projects (name) VALUES ${projects.map((project) => {
-		return Lego.sql `(${project.name})`;
-	})}`;
-```
-
-Which creates the query `INSERT INTO projects (name) VALUES ($1), ($2)`.
-
-In some cases, you want to append a statement:
-
-```js
-const lego = Lego.sql `SELECT * FROM tests`;
-
-if (shouldOrderBy) {
-	lego.append `ORDER BY value`;
-}
-
-```
-
-In `DELETE`, `UPDATE` and `INSERT` queries, when not using a `RETURNING` clause, the number of affected rows is resolved. Otherwise, the rows are resolved.
-
-## Data mapper
-
-Lego makes it easy to parse rows and transform them to objects. Consider the below rows:
-
-```js
-const rows = [{
-	id: 1,
-	test_id: 1,
-	test_name: 'Test 1'
-}, {
-	id: 1,
-	test_id: 2,
-	test_name: 'Test 2'
-}];
-```
-
-The rows are flat but do contain 1 root object and 2 child objects. Something like the below:
-
-```js
-const objects = [{
-	id: 1,
-	tests: [{
-		id: 1,
-		name: 'Test 1'
-	}, {
-		id: 2,
-		name: 'Test 2'
-	}]
-}]
-```
-
-You can transform the rows by simply passing the rows to Lego's parse system and providing a definition object:
-```js
-Lego.parse(rows, [{
-	id: 'id',
-	tests: [{
-		id: 'test_id',
-		name: 'test_name'
-	}]
-}]);
-```
-
-The definition object describes how to map columns and rows to objects. Every property refers to a column
-name. You can also pass multiple column names to refer to multiple columns. This creates an aggregate
-primary key in the object.
-
 ## Transactions
 
 Transactions are also supported. You can either chain the calls manually by returning a promise in the transaction's `callback`:
@@ -146,7 +150,7 @@ Lego.transaction((transaction) => {
 });
 ```
 
-Or use the transaction queue which invokes the queries in series (make sure to *not* return a promise when using the queue!):
+Or use the transaction queue which invokes the queries in series:
 
 ```js
 Lego.transaction((transaction) => {
@@ -174,9 +178,9 @@ Lego.transaction((transaction) => {
 
 ## Migrations
 
-To create a migration you can simply invoke `lego migrate:make`. This creates an empty migration with an `up` and a `down` method.
+To alter your tables you should use migrations. To create a migration you can simply invoke `lego migrate:make`. This creates an empty migration with an `up` and a `down` method.
 
-Migrations are executed in a transaction which is passed in both the `up` and `down` method.
+To execute migrations, simply invoke `lego migrate:latest`. Migrations are executed in a transaction. The transaction is passed as argument in both the `up` and `down` method.
 
 ```js
 export function up(transaction) {
@@ -189,7 +193,7 @@ export function down(transaction) {
 }
 ```
 
-Lego creates a table to keep track of all the migrations. This migrations table is created in it's own schema, so don't worry about any collisions (unless you are using the `lego` schema).
+Lego creates a `migrations` table to keep track of all the migrations. This migrations table is created in it's own schema called `lego`, so don't worry about any collisions.
 
 To execute your migrations, you can add a run script to your `package.json`:
 
