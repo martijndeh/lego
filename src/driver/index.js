@@ -1,7 +1,13 @@
-import url from 'url';
-import { PostgresDriver } from './postgres/index.js';
+// @flow
 
-export function createDriver(databaseURL) {
+import url from 'url';
+import { PostgresDriver as Driver } from './postgres/index.js';
+import type { PgClient } from './postgres/index.js';
+
+export { Driver };
+export type { PgClient };
+
+export function createDriver(databaseURL: ?string): Driver {
 	if (!databaseURL) {
 		throw new Error('No DATABASE_URL provided.');
 	}
@@ -12,7 +18,7 @@ export function createDriver(databaseURL) {
 	switch (parse.protocol) {
 	case 'pg:':
 	case 'postgres:':
-		driver = new PostgresDriver(databaseURL);
+		driver = new Driver(databaseURL);
 		break;
 	}
 

@@ -63,7 +63,7 @@ export default class Migrations {
 					return 0;
 				}
 				else {
-					throw error;
+					return Promise.reject(error);
 				}
 			});
 	}
@@ -109,7 +109,7 @@ export function down(transaction) {
 					// The schema already exists. That's fine.
 				}
 				else {
-					throw error;
+					return Promise.reject(error);
 				}
 			});
 	}
@@ -127,10 +127,10 @@ export function down(transaction) {
 				const newVersion = direction == 'up' ? version : version - 1;
 
 				if (!returnValue || !returnValue.then) {
-					transaction.sql `INSERT INTO lego.migrations (version) VALUES (${newVersion})`;
+					return transaction.sql `INSERT INTO lego.migrations (version) VALUES (${newVersion})`;
 				}
 				else {
-					returnValue
+					return returnValue
 						.then((result) => {
 							return Lego
 								.sql `INSERT INTO lego.migrations (version) VALUES (${newVersion})`

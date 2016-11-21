@@ -1,84 +1,103 @@
-const pg = require('pg');
-const debug = require('debug')('lego:sql');
+// @flow
 
-export function setPoolIdleTimeout(timeout) {
+import pg from 'pg';
+import url from 'url';
+
+export function setPoolIdleTimeout(timeout: number) {
 	pg.defaults.poolIdleTimeout = timeout;
 }
 
+type PgResult = {
+	oid: ?number;
+	fields: string[];
+	rowCount: number;
+	rows: Object[];
+}
+
+export type PgClient = {
+	query: (text: string, parameters: any[]) => Promise<PgResult>;
+	release: (error: ?Error) => void;
+}
+
+type PgPool = {
+	connect: () => Promise<PgClient>;
+}
+
 export class PostgresDriver {
-	constructor(databaseURL) {
-		this.$$databaseURL = databaseURL;
+	pool: PgPool;
+	constructor(databaseURL: string) {
+		this.createPool(databaseURL);
 	}
 
-	connect() {
-		return new Promise((resolve, reject) => {
-			pg.connect(this.$$databaseURL, function (error, client, done) {
-				if (error) {
-					reject(error);
-				}
-				else {
-					resolve({
-						client: client,
-						done: done,
-					});
-				}
-			});
+	createPool(databaseUrl: string) {
+		const { auth, hostname, port, pathname } = url.parse(databaseUrl);
+		const [ user, password ] = (auth || '').split(':');
+
+		const config = {
+			user: user,
+			password: password,
+			host: hostname,
+			port: port,
+			database: (pathname || '').slice(1),
+			ssl: process.env.LEGO_DISABLE_SSL !== 'true',
+		};
+
+		const internal = pg.native ? pg.native : pg;
+		this.pool = new internal.Pool(config);
+
+		this.pool.on('error', () => {
+			//
 		});
 	}
 
-	query(client, text, parameters) {
-		debug(text, parameters);
-
-		return new Promise(function (resolve, reject) {
-			client.query(text, parameters, function (error, result) {
-				if (error) {
-					error.query = text;
-					reject(error);
+	query(client: PgClient, text: string, parameters: any[]): Promise<number|any[]> {
+		return client.query(text, parameters)
+			.then((result) => {
+				if ((result.oid === 0 || isNaN(result.oid) || result.oid === null) && result.fields.length === 0) {
+					return result.rowCount;
 				}
 				else {
-					if ((result.oid === 0 || isNaN(result.oid) || result.oid === null) && result.fields.length === 0) {
-						resolve(result.rowCount);
-					}
-					else {
-						resolve(result.rows);
-					}
+					return result.rows;
 				}
+			})
+			.catch((error) => {
+				error.query = text;
+				return Promise.reject(error);
 			});
-		});
 	}
 
-	exec(text, parameters) {
-		return this.connect()
-			.then((driver) => {
-				return this.query(driver.client, text, parameters)
+	exec(text: string, parameters: any[]) {
+		return this.pool.connect()
+			.then((client) => {
+				return this.query(client, text, parameters)
 					.then((result) => {
-						driver.done();
+						client.release();
 
 						return result;
 					})
 					.catch((error) => {
-						driver.done();
+						client.release();
 
-						throw error;
+						return Promise.reject(error);
 					});
 			});
 	}
 
 	beginTransaction() {
-		return this.connect()
-			.then((driver) => {
-				return this.query(driver.client, 'BEGIN', [])
+		return this.pool.connect()
+			.then((client) => {
+				return this.query(client, 'BEGIN', [])
 					.then(function () {
-						return driver;
+						return client;
 					});
 			});
 	}
 
-	commitTransaction(client) {
+	commitTransaction(client: PgClient) {
 		return this.query(client, 'COMMIT', []);
 	}
 
-	rollbackTransaction(client) {
+	rollbackTransaction(client: PgClient) {
 		return this.query(client, 'ROLLBACK', []);
 	}
-};
+}

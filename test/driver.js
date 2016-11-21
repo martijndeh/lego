@@ -53,15 +53,6 @@ describe('driver', function () {
 		});
 	});
 
-	it('connect error', function () {
-		const driver = createDriver('postgres://localhost:1337');
-		driver.connect()
-			.then(assert.fail)
-			.catch(function (error) {
-				assert.equal(error.message, 'connect ECONNREFUSED 127.0.0.1:1337');
-			});
-	});
-
 	it('undefined database url', function () {
 		assert.throws(function () {
 			createDriver(null);

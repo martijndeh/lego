@@ -1,5 +1,4 @@
 import Lego from '../src';
-import { default as LegoInstance } from '../src/lego';
 
 import assert from 'assert';
 
@@ -7,7 +6,7 @@ describe('query', function () {
 	it('without parameters', function () {
 		const lego = Lego.sql `SELECT * FROM users`;
 
-		const query = lego.$toQuery();
+		const query = lego.toQuery();
 
 		assert.equal(query.text, 'SELECT * FROM users');
 		assert.equal(query.parameters.length, 0);
@@ -17,7 +16,7 @@ describe('query', function () {
 		const name = 'Martijn';
 		const lego = Lego.sql `SELECT * FROM users WHERE name = ${name}`;
 
-		const query = lego.$toQuery();
+		const query = lego.toQuery();
 		assert.equal(query.text, 'SELECT * FROM users WHERE name = $1');
 		assert.equal(query.parameters.length, 1);
 		assert.equal(query.parameters[0], name);
@@ -28,7 +27,7 @@ describe('query', function () {
 		const age = 27;
 		const lego = Lego.sql `SELECT * FROM users WHERE name = ${name} AND age = ${age}`;
 
-		const query = lego.$toQuery();
+		const query = lego.toQuery();
 		assert.equal(query.text, 'SELECT * FROM users WHERE name = $1 AND age = $2');
 		assert.equal(query.parameters.length, 2);
 		assert.equal(query.parameters[0], name);
@@ -56,7 +55,7 @@ describe('query', function () {
 			const lego = Lego.sql `SELECT * FROM users`;
 			lego.append `ORDER BY age`;
 
-			const query = lego.$toQuery();
+			const query = lego.toQuery();
 			assert.equal(query.text, 'SELECT * FROM users ORDER BY age');
 		});
 
@@ -65,7 +64,7 @@ describe('query', function () {
 			const lego = Lego.sql `SELECT * FROM users WHERE name = ${name}`;
 			lego.append `ORDER BY age`;
 
-			const query = lego.$toQuery();
+			const query = lego.toQuery();
 			assert.equal(query.text, 'SELECT * FROM users WHERE name = $1 ORDER BY age');
 		});
 
@@ -76,7 +75,7 @@ describe('query', function () {
 			const lego = Lego.sql `SELECT * FROM tests WHERE name = ${name}`;
 			lego.append `AND age <> (${age})`;
 
-			const query = lego.$toQuery();
+			const query = lego.toQuery();
 			assert.equal(query.text, 'SELECT * FROM tests WHERE name = $1 AND age <> ($2)');
 			assert.deepEqual(query.parameters, [name, age]);
 		});
@@ -89,8 +88,8 @@ describe('query', function () {
 			const lego = Lego.sql `SELECT * FROM tests WHERE name = ${name}`;
 			lego.append `AND age <> (${age}) AND gender = ${gender}`;
 
-			const query = lego.$toQuery();
-			assert.equal(query.text, 'SELECT * FROM tests WHERE name = $1 AND age <> ($2 ) AND gender = $3');
+			const query = lego.toQuery();
+			assert.equal(query.text, 'SELECT * FROM tests WHERE name = $1 AND age <> ($2) AND gender = $3');
 			assert.deepEqual(query.parameters, [name, age, gender]);
 		});
 
@@ -103,8 +102,8 @@ describe('query', function () {
 			const lego = Lego.sql `SELECT * FROM tests WHERE name = ${name}`;
 			lego.append `AND age <> (${age}) AND gender = ${gender} AND role = ${role}`;
 
-			const query = lego.$toQuery();
-			assert.equal(query.text, 'SELECT * FROM tests WHERE name = $1 AND age <> ($2 ) AND gender = $3  AND role = $4');
+			const query = lego.toQuery();
+			assert.equal(query.text, 'SELECT * FROM tests WHERE name = $1 AND age <> ($2) AND gender = $3 AND role = $4');
 			assert.deepEqual(query.parameters, [name, age, gender, role]);
 		});
 	});
@@ -113,7 +112,7 @@ describe('query', function () {
 		it('merge regular', function () {
 			const name = 'Martijn';
 			const lego = Lego.sql `INSERT INTO users (name) ${Lego.sql `VALUES (${name})`}`;
-			const query = lego.$toQuery();
+			const query = lego.toQuery();
 
 			assert.equal(query.text, 'INSERT INTO users (name) VALUES ($1)');
 			assert.equal(query.parameters[0], name);
@@ -125,7 +124,7 @@ describe('query', function () {
 			const sortLego = Lego.sql `ORDER BY users.created_at DESC`;
 			const lego = Lego.sql `SELECT * FROM users ${whereLego} ${sortLego}`;
 
-			const query = lego.$toQuery();
+			const query = lego.toQuery();
 			assert.equal(query.text, 'SELECT * FROM users WHERE users.name = $1 ORDER BY users.created_at DESC');
 			assert.equal(query.parameters[0], 'Martijn');
 		});
@@ -134,7 +133,7 @@ describe('query', function () {
 			const names = ['Martijn', 'Bob'];
 			const lego = Lego.sql `INSERT INTO users (name) VALUES ${names.map((name) => Lego.sql `(${name})`)}`;
 
-			const query = lego.$toQuery();
+			const query = lego.toQuery();
 
 			assert.equal(query.text, 'INSERT INTO users (name) VALUES ($1), ($2)');
 			assert.equal(query.parameters[0], 'Martijn');
@@ -145,7 +144,7 @@ describe('query', function () {
 			const names = ['Martijn'];
 			const lego = Lego.sql `INSERT INTO users (name) VALUES ${names.map((name) => Lego.sql `(${name})`)}`;
 
-			const query = lego.$toQuery();
+			const query = lego.toQuery();
 
 			assert.equal(query.text, 'INSERT INTO users (name) VALUES ($1)');
 			assert.equal(query.parameters[0], 'Martijn');

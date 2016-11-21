@@ -77,15 +77,18 @@ describe('transaction', function () {
 			});
 	});
 
-	it('cannot execute multiple statements and return a promise', function () {
+	it('should execute in series with return value', function () {
 		return Lego
 			.transaction((transaction) => {
 				transaction.sql `INSERT INTO tests (text, value) VALUES ('Martijn', 1)`;
-				return transaction.sql `INSERT INTO tests (text, value) VALUES ('Martijn', 1)`;
+				return transaction.sql `UPDATE tests SET value = 2 WHERE value = 1`;
 			})
-			.then(assert.fail)
-			.catch((error) => {
-				assert.equal(error.message, 'A promise was returned in Lego#transaction\'s callback, but multiple statements were invoked.');
+			.then(() => {
+				return Lego.sql `SELECT * FROM tests`.first();
+			})
+			.then((test) => {
+				assert.equal(test.value, 2);
+				assert.equal(test.text, 'Martijn');
 			});
 	});
 });

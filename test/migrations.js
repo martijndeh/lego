@@ -212,9 +212,16 @@ describe('migrations', function () {
 	});
 
 	describe('going up', function () {
+		let migrations = {};
+
 		beforeEach(function () {
 			sandbox.stub(Migrations, 'loadMigration', function (version) {
-				if (version === 1) {
+				const migration = migrations[String(version)];
+
+				if (migration) {
+					return migration;
+				}
+				else if (version === 1) {
 					return {
 						up: function (transaction) {
 							transaction.sql `CREATE TABLE tests (name TEXT, value INTEGER)`;
@@ -279,6 +286,8 @@ describe('migrations', function () {
 		});
 
 		afterEach(function () {
+			migrations = {};
+
 			return Lego.sql `DROP TABLE IF EXISTS tests, tests2`
 				.then(function () {
 					return Lego.sql `DROP SCHEMA IF EXISTS lego CASCADE`;
@@ -373,7 +382,7 @@ describe('migrations', function () {
 				});
 		});
 
-		it('fail migration', function () {
+		it('fail migration with transaction', function () {
 			return Migrations.migrate(0, 5)
 				.then(assert.fail)
 				.catch(function (error) {
@@ -382,6 +391,31 @@ describe('migrations', function () {
 					return Migrations.getDatabaseVersion()
 						.then(function (version) {
 							assert.equal(version, 4);
+						});
+				});
+		});
+
+		it('fail migration without transaction', function () {
+			migrations['1'] = {
+				up: (transaction) => {
+					transaction.sql `SELECT 1`;
+
+					return Promise.reject('ERROR');
+				},
+
+				down: () => {
+
+				},
+			};
+
+			return Migrations.migrate(0, 1)
+				.then(assert.fail)
+				.catch(function (error) {
+					assert.equal(error, 'ERROR');
+
+					return Migrations.getDatabaseVersion()
+						.then(function (version) {
+							assert.equal(version, 0);
 						});
 				});
 		});
