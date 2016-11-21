@@ -76,25 +76,25 @@ describe('parse', function () {
 			test_id: 1,
 			name: 'Test 1',
 			foo_id: 11,
-			foo_name: 'Foo 1'
+			foo_name: 'Foo 1',
 		}, {
 			id: 1,
 			test_id: 2,
 			name: 'Test 2',
 			foo_id: 21,
-			foo_name: 'Foo 1'
+			foo_name: 'Foo 1',
 		}];
 
 		const objects = Lego.parse(rows, [{
 			id: 'id',
 			tests: [{
 				id: 'test_id',
-				name: 'name'
+				name: 'name',
 			}],
 			foos: [{
 				id: 'foo_id',
-				name: 'foo_name'
-			}]
+				name: 'foo_name',
+			}],
 		}]);
 
 		assert.equal(objects.length, 1);
@@ -116,7 +116,7 @@ describe('parse', function () {
 			foo_id: 11,
 			foo_name: 'Foo 1',
 			bar_id: 1337,
-			bar_name: 'Bar 1'
+			bar_name: 'Bar 1',
 		}, {
 			id: 1,
 			test_id: 2,
@@ -124,23 +124,23 @@ describe('parse', function () {
 			foo_id: 21,
 			foo_name: 'Foo 1',
 			bar_id: null,
-			bar_name: null
+			bar_name: null,
 		}];
 
 		const objects = Lego.parse(rows, [{
 			id: 'id',
 			tests: [{
 				id: 'test_id',
-				name: 'name'
+				name: 'name',
 			}],
 			foos: [{
 				id: 'foo_id',
-				name: 'foo_name'
+				name: 'foo_name',
 			}],
 			bars: [{
 				id: 'bar_id',
-				name: 'bar_name'
-			}]
+				name: 'bar_name',
+			}],
 		}]);
 
 		assert.equal(objects.length, 1);
@@ -255,56 +255,19 @@ describe('parse', function () {
 		const rows = [{
 			id: 'd15d8d11-2b1c-46b4-a832-f3e2958fa45f',
 			test_id: 'a2aee9d5-5539-48c8-b474-3dd882e0e992',
-			test_name: 'My First Test',
-			variant_id: '2b2e2ffa-7246-48c6-8596-a2ee3b066fc7',
-			variant_name: 'A',
-			stats_id: '8cdae3d9-4ef0-4772-a36b-f6cf76d9105a',
-			conversions: 10,
-			participants: 10,
-			current_conversion_rate: null,
-			min_conversion_rate: null,
-			max_conversion_rate: null,
-			estimated_conversion_rate: null,
 			domain_id: 'c09c1033-81ed-4919-96fc-3cae046ee69b',
-			domain_created_at: new Date(),
 		}, {
 			id: 'd15d8d11-2b1c-46b4-a832-f3e2958fa45f',
 			test_id: 'a2aee9d5-5539-48c8-b474-3dd882e0e992',
-			test_name: 'My First Test',
-			variant_id: '2b2e2ffa-7246-48c6-8596-a2ee3b066fc7',
-			variant_name: 'A',
-			stats_id: '8cdae3d9-4ef0-4772-a36b-f6cf76d9105a',
-			conversions: 10,
-			participants: 10,
-			current_conversion_rate: null,
-			min_conversion_rate: null,
-			max_conversion_rate: null,
-			estimated_conversion_rate: null,
 			domain_id: 'd10c1033-81ed-4919-96fc-3cae046ee69f',
-			domain_created_at: new Date(),
 		}];
 
 		const object = Lego.parse(rows, {
 			id: 'id',
 			tests: [{
 				id: 'test_id',
-				name: 'test_name',
-				variants: [{
-					id: 'variant_id',
-					name: 'variant_name',
-					stats: {
-						id: 'stats_id',
-						conversions: 'conversions',
-						participants: 'participants',
-						current_conversion_rate: 'current_conversion_rate',
-						min_conversion_rate: 'min_conversion_rate',
-						max_conversion_rate: 'max_conversion_rate',
-						estimated_conversion_rate: 'estimated_conversion_rate',
-					},
-				}],
 				domains: [{
 					id: 'domain_id',
-					created_at: 'domain_created_at',
 				}],
 			}],
 		});
@@ -341,13 +304,14 @@ describe('parse', function () {
 				id: 'domain_id',
 				name: 'domain_name',
 				tests: [{
-					id: ['test_id', 'domain_id'],
+					id: 'test_id',
 					name: 'test_name',
 					participants: 'test_participants',
 				}],
 			}],
 		});
 
+		assert.equal(object.id, rows[0].id);
 		assert.equal(object.domains && object.domains.length, 2);
 		assert.equal(object.domains[0].tests && object.domains[0].tests.length, 1);
 		assert.equal(object.domains[1].tests && object.domains[1].tests.length, 1);
@@ -387,5 +351,36 @@ describe('parse', function () {
 			name: 'C',
 			count: 3,
 		}]);
+	});
+
+	it('should handle duplicate child objects', () => {
+		const rows = [{
+			'id': '0c4dc991-c594-4460-9963-9904cd08f913',
+			'subcategory_id': '8ee3d487-c12f-4a49-b8fa-b014c5a50073',
+			'subcategory_name': 'A',
+			'category_id': '58a409e0-7e8a-449a-8f7d-477055a92afd',
+			'category_name': 'C',
+		}, {
+			'id': '507ae1a5-9907-4727-86f3-c24698515adc',
+			'subcategory_id': 'e8dbeccb-bce1-4094-b265-195efea4774e',
+			'subcategory_name': 'B',
+			'category_id': '58a409e0-7e8a-449a-8f7d-477055a92afd',
+			'category_name': 'C',
+		}];
+
+		const objects = Lego.parse(rows, [{
+			id: 'id',
+			subcategory: {
+				id: 'subcategory_id',
+				name: 'subcategory_name',
+			},
+			category: {
+				id: 'category_id',
+				name: 'category_name',
+			},
+		}]);
+
+		assert.notEqual(objects[0].category, null);
+		assert.notEqual(objects[1].category, null);
 	});
 });

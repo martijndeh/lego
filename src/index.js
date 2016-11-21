@@ -19,4 +19,8 @@ export default {
 	parse: (rows, definition) => {
 		return parse(rows, definition);
 	},
+
+	compile: (definition) => {
+		return compile(definition);
+	},
 };

@@ -1,235 +1,150 @@
-function createStateID(id, parents, row, columnNames) {
-	if (row && columnNames) {
-		return ['object', ...parents, ...columnNames.map((columnName) => row[columnName])].join(':');
-	}
+// @flow
 
-	return ['object', ...parents, id].join(':');
-}
+const PRIMARY_KEY = 'id';
 
-export default function parse(rows, definition) {
-	const isArray = Array.isArray(definition);
-	let result = isArray ? [] : {};
-
+export function compile(definition) {
 	const columns = {};
 
-	function parseColumn(object_, parents) {
-		const object = Array.isArray(object_) ? object_[0] : object_;
+	function parseColumn(object_, relationship, depth) {
+		const isArray = Array.isArray(object_);
+		const object = isArray ? object_[0] : object_;
 
-		Object.keys(object).forEach(function (propertyName) {
+		Object.keys(object).forEach((propertyName) => {
+			// The column can either be a string, an array of strings, or an array with a string and
+			// a function.
 			const column = object[propertyName];
 
 			const isString = typeof column === 'string';
-			const isArrayOfStrings = Array.isArray(column) && column.every((column) => typeof column === 'string');
 			const isFunction = Array.isArray(column) && column.length === 2 && typeof column[0] === 'string' && typeof column[1] === 'function';
 
-			if (isString || isArrayOfStrings) {
-				const columnName = isArrayOfStrings ? column[0] : column;
-				columns[columnName] = {
-					name: propertyName,
-					columnNames: isArrayOfStrings ? column : [columnName],
-					parents: parents,
-					isArray: Array.isArray(object_),
-				};
-			}
-			else if (isFunction) {
-				const columnName = column[0];
-				columns[columnName] = {
-					name: propertyName,
-					transformFunction: column[1],
-					parents: parents,
-					isArray: Array.isArray(object_),
-				};
+			if (isString || isFunction) {
+				const columnName = isFunction ? column[0] : column;
+
+				// TODO: Check if the column already exists. If so, the definition object is invalid.
+
+				if (propertyName === PRIMARY_KEY) {
+					if (isArray) {
+						columns[columnName] = function handler(nodes, value) {
+							if (value == null) {
+								return null;
+							}
+							else {
+								const parent = nodes[depth];
+
+								if (!parent) {
+									throw new Error(`Could not find object at depth ${depth}.`);
+								}
+
+								if (!parent[relationship]) {
+									const val = isFunction ? column[1](value) : value;
+									const newObject = { [PRIMARY_KEY]: val };
+									parent[relationship] = [newObject];
+									return [ depth, newObject ];
+								}
+								else {
+									const array = parent[relationship];
+									const val = isFunction ? column[1](value) : value;
+
+									// TODO: This likely performs inefficiently. We should create benchmarks
+									// so we can gets some numbers and try to optimize this.
+									const existingObject = array.find((object) => object[PRIMARY_KEY] === val);
+
+									if (!existingObject) {
+										const newObject = { [PRIMARY_KEY]: value };
+										array.push(newObject);
+										return [ depth, newObject ];
+									}
+									else {
+										return [ depth, existingObject ];
+									}
+								}
+							}
+						};
+					}
+					else {
+						columns[columnName] = function handler(nodes, value) {
+							if (value == null) {
+								return null;
+							}
+							else {
+								const parent = nodes[depth];
+
+								if (!parent) {
+									throw new Error(`Could not find object at depth ${depth}.`);
+								}
+
+								if (parent[relationship]) {
+									return [ depth, parent[relationship] ];
+								}
+								else {
+									const val = isFunction ? column[1](value) : value;
+									const newObject = { [PRIMARY_KEY]: val };
+									parent[relationship] = newObject;
+									return [ depth, newObject ];
+								}
+							}
+						};
+					}
+				}
+				else {
+					// Set the value on the properties of the current object.
+					columns[columnName] = function handler(nodes, value) {
+						const parent = nodes[depth + 1];
+
+						if (!parent) {
+							throw new Error(`Could not find parent at depth ${depth}.`);
+						}
+
+						const val = isFunction ? column[1](value) : value;
+						parent[propertyName] = val;
+					};
+				}
 			}
 			else {
-				parseColumn(column, parents.concat(propertyName));
+				// This is a property name which should build a relation. E.g. category in categories.
+				parseColumn(column, propertyName, depth + 1);
 			}
 		});
 	}
 
-	parseColumn(definition, []);
+	const flag = 'root';
 
-	let states = {};
-	let metadata = {};
+	parseColumn(definition, flag, 0);
 
-	rows.forEach(function (row) {
-		let rootState		= null;
-		let currentState	= null;
-		let currentStateID	= null;
-		let isNull			= false;
+	return function (rows) {
+		let root = {};
 
-		function findMetadata(id) {
-			return metadata[id];
-		}
+		rows.forEach((row) => {
+			const nodes = [root];
 
-		function findState(id) {
-			return states[id];
-		}
+			Object.keys(row).forEach((columnName) => {
+				const handler = columns[columnName];
 
-		function createState(id, state, data) {
-			states[id] = state;
-			metadata[id] = data;
-		}
+				if (handler) {
+					const value = row[columnName];
+					const result = handler(nodes, value);
 
-		Object.keys(row).forEach((columnName) => {
-			const column = columns[columnName];
+					if (result) {
+						const [ depth, node ] = result;
+						const count = (nodes.length - 1) - depth;
 
-			if (column) {
-				// If this is a primary key...
-				if (column.name == 'id') {
-					if (row[columnName] === null) {
-						isNull = true;
-					}
-					else {
-						isNull = false;
-
-						const stateID = createStateID(row[columnName], column.parents, row, column.columnNames);
-
-						if (column.parents.length === 0) {
-							// find the root state with id $id—or create something new
-							rootState = findState(stateID);
-							if (!rootState) {
-								rootState = {};
-
-								createState(stateID, rootState, {
-									parents: column.parents,
-									parent: result,
-								});
-
-								if (isArray) {
-									result.push(rootState);
-								}
-								else {
-									if (result && Object.keys(result).length > 0) {
-										throw new Error('The root object already exists, but a new object with a different id found. Should the root object in your definition be an array instead?');
-									}
-
-									result = rootState;
-								}
-							}
-
-							currentState	= rootState;
-							currentStateID	= stateID;
+						if (count > 0) {
+							nodes.splice(nodes.length - count, count);
 						}
-						else {
-							let state = findState(stateID);
-							if (!state) {
-								// We need to find the current state. Either as
-								// 1) a parent state of the currentState,
-								// 2) a child state of the currentState
-								// 3) a child state of the rootState.
-								let currentStateMetadata = findMetadata(currentStateID);
-								let parentName = column.parents[column.parents.length - 1];
 
-								if (column.parents.length == 1) {
-									// Child of root state
-									state = {};
-
-									if (!rootState[parentName]) {
-										if (column.isArray) {
-											rootState[parentName] = [state];
-										}
-										else {
-											rootState[parentName] = state;
-										}
-									}
-									else {
-										if (column.isArray) {
-											rootState[parentName].push(state);
-										}
-										else {
-											throw new Error();
-										}
-									}
-
-									createState(stateID, state, {
-										parents: column.parents,
-										parent: rootState,
-									});
-								}
-								else if (currentStateMetadata.parents.length == column.parents.length - 1) {
-									// This is a child
-									state = {};
-
-									if (!currentState[parentName]) {
-										if (column.isArray) {
-											currentState[parentName] = [state];
-										}
-										else {
-											currentState[parentName] = state;
-										}
-									}
-									else {
-										if (column.isArray) {
-											currentState[parentName].push(state);
-										}
-										else {
-											throw new Error();
-										}
-									}
-
-									createState(stateID, state, {
-										parents: column.parents,
-										parent: currentState,
-									});
-								}
-								else if (currentStateMetadata.parents.length - 1 == column.parents.length) {
-									let offset = 1;
-
-									while (column.parents[column.parents.length - offset] != currentStateMetadata.parents[currentStateMetadata.parents.length - 1 - 1]) {
-										// OK, so we don't have the same relation.
-										const parentStateID = createStateID(currentStateMetadata.parent.id, currentStateMetadata.parents.slice(0, -1));
-										currentStateMetadata = findMetadata(parentStateID);
-
-										offset = offset + 1;
-									}
-
-									// This is a parent.
-									state = {};
-
-									if (!currentStateMetadata.parent[parentName]) {
-										if (column.isArray) {
-											currentStateMetadata.parent[parentName] = [state];
-										}
-										else {
-											currentStateMetadata.parent[parentName] = state;
-										}
-									}
-									else {
-										if (column.isArray) {
-											currentStateMetadata.parent[parentName].push(state);
-										}
-										else {
-											throw new Error();
-										}
-									}
-
-									createState(stateID, state, {
-										parents: column.parents,
-										parent: currentStateMetadata.parent,
-									});
-								}
-								else {
-									throw new Error('Unknown parent-child relationship.');
-								}
-							}
-
-							currentState	= state;
-							currentStateID	= stateID;
-						}
+						nodes.push(node);
 					}
 				}
-
-				if (!isNull) {
-					if (column.transformFunction) {
-						currentState[column.name] = column.transformFunction(row[columnName], row);
-					}
-					else {
-						currentState[column.name] = row[columnName];
-					}
-				}
-			}
+			});
 		});
-	});
 
-	return result;
+		return root[flag];
+	};
+}
+
+export default function parse(rows, definition) {
+	// TODO: Cache the compiler.
+	const compiler = compile(definition);
+
+	return compiler(rows);
 }
