@@ -12,5 +12,4 @@ after_script:
   - npm run coverage
   - npm run coveralls
 env:
-  - DATABASE_URL=postgres://postgres@localhost/lego_test
-  - LEGO_DISABLE_SSL=true
+  - DATABASE_URL=postgres://postgres@localhost/lego_test LEGO_DISABLE_SSL=true
