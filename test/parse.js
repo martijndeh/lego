@@ -426,4 +426,64 @@ describe('parse', function () {
 			items: [],
 		});
 	});
+
+	it('should not add children if parent does not exist', () => {
+		const rows = [{
+			id: 1,
+			item_id: null,
+			quantity: null,
+			product_id: null,
+			product_name: null,
+			price_id: null,
+			value: null,
+			image_id: null,
+			image_url: null,
+		}];
+
+		const object = Lego.parse(rows, {
+			id: 'id',
+			items: [{
+				id: 'item_id',
+				quantity: 'quantity',
+				product: {
+					id: 'product_id',
+					name: 'product_name',
+					prices: [{
+						id: 'price_id',
+						value: 'value',
+					}],
+					image: {
+						id: 'image_id',
+						name: 'image_name',
+					},
+				},
+			}],
+		});
+
+		assert.deepEqual(object, {
+			id: 1,
+			items: [],
+		});
+	});
+
+	it('should set property to null if column does not exist', () => {
+		const rows = [{
+			id: 1,
+			item_id: null,
+			item_name: null,
+		}];
+
+		const object = Lego.parse(rows, {
+			id: 'id',
+			item: {
+				id: 'item_id',
+				name: 'item_name',
+			},
+		});
+
+		assert.deepEqual(object, {
+			id: rows[0].id,
+			item: null,
+		});
+	});
 });
