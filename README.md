@@ -8,13 +8,13 @@ A lightweight SQL (string) builder using ES6 template strings. Lego embraces SQL
 Lego.sql `SELECT * FROM users WHERE name = ${name}`;
 ```
 
-Lego does not do simple string concatenation. Instead, Lego creates the following prepared statement and passes `name` as parameter:
+Lego does not do simple string concatenation. Instead, Lego creates parameterized queries. For example, the following statement is creates from the previous query:
 
 ```sql
 SELECT * FROM users WHERE name = $1
 ```
 
-## Breaking changes in 2.0
+## Breaking changes in 2.x
 
 - `Lego#sql` now memoizes the query's result.
 - Queries in transactions now always get executed in series, in chronological order instead of the returned `Lego#sql` first and then the other queries.
@@ -22,8 +22,7 @@ SELECT * FROM users WHERE name = $1
 
 ## Quick start
 
-Lego uses ES6 template strings. From the template string, a parameterized query is created and passed
-to the driver. The database connection is taken from `process.env.DATABASE_URL`.
+Lego uses ES6 template strings. From the template string, a parameterized query is created and passed to the driver. The driver creates a pool of connections with the url from `process.env.DATABASE_URL`.
 
 ```js
 Lego.sql `INSERT INTO projects (name) VALUES (${name}) RETURNING *`
@@ -56,13 +55,25 @@ if (shouldOrderBy) {
 }
 ```
 
+### Lego#first
+
+Or if you just want to first result from a query (or null if there were not results):
+
+```js
+Lego.sql `SELECT * FROM accounts LIMIT 1`
+	.first()
+	.then((account) => {
+		// account is the first row from the query, or null if no rows were found.
+	});
+```
+
 ### Return value
 
 `Lego.sql` returns a Promise-like object and the query is executed when `.then(..)` is invoked. The Promise is resolved with the query's result.
 
 In `DELETE`, `UPDATE` and `INSERT` queries, when not using a `RETURNING` clause, the number of affected rows is resolved. Otherwise, the row data is resolved.
 
-## Data mapper
+## Rows to objects
 
 Lego makes it easy to parse rows and transform them to objects. Consider the following rows:
 
@@ -105,8 +116,7 @@ Lego.parse(rows, [{
 ```
 
 The definition object describes how to map columns and rows to objects. Every property refers to a column
-name. You can also pass multiple column names to refer to multiple columns. This creates an aggregate
-primary key in the object.
+name.
 
 ```js
 Lego.sql `SELECT
@@ -150,7 +160,7 @@ Lego.transaction((transaction) => {
 });
 ```
 
-Or use the transaction queue which invokes the queries in series:
+Or use the transaction's queue which invokes the queries in series:
 
 ```js
 Lego.transaction((transaction) => {
@@ -178,9 +188,9 @@ Lego.transaction((transaction) => {
 
 ## Migrations
 
-To alter your tables you should use migrations. To create a migration you can simply invoke `lego migrate:make`. This creates an empty migration with an `up` and a `down` method.
+To create a migration you can simply invoke `lego migrate:make`. This creates an empty migration with an `up` and a `down` function in which you can write your queries to alter your database.
 
-To execute migrations, simply invoke `lego migrate:latest`. Migrations are executed in a transaction. The transaction is passed as argument in both the `up` and `down` method.
+To execute migrations, simply invoke `lego migrate:latest`. Migrations are executed in a transaction. The transaction is passed as argument in the migrate functions.
 
 ```js
 export function up(transaction) {
@@ -195,7 +205,7 @@ export function down(transaction) {
 
 Lego creates a `migrations` table to keep track of all the migrations. This migrations table is created in it's own schema called `lego`, so don't worry about any collisions.
 
-To execute your migrations, you can add a run script to your `package.json`:
+To execute your migrations when you call `npm run release` you should add a run script to your `package.json`:
 
 ```json
 "release": "node -r babel-register ./node_modules/.bin/lego migrate:latest",
@@ -206,6 +216,7 @@ To execute your migrations, you can add a run script to your `package.json`:
 The command line interface supports the following commands:
 
 ```
+lego version                         Prints the version of Lego.
 lego migrate:make                    Creates a new migration file.
 lego migrate:latest                  Migrates to the latest migration.
 lego migrate:rollback                Rolls back the previous migration.
