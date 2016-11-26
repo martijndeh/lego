@@ -25,16 +25,20 @@ export function compile(definition) {
 				if (propertyName === PRIMARY_KEY) {
 					if (isArray) {
 						columns[columnName] = function handler(nodes, value) {
+							const parent = nodes[depth];
+
+							if (!parent) {
+								throw new Error(`Lego#parse(${columnName}>${propertyName}): Could not find object at depth ${depth}.`);
+							}
+
 							if (value == null) {
+								if (!parent[relationship]) {
+									parent[relationship] = [];
+								}
+
 								return null;
 							}
 							else {
-								const parent = nodes[depth];
-
-								if (!parent) {
-									throw new Error(`Could not find object at depth ${depth}.`);
-								}
-
 								if (!parent[relationship]) {
 									const val = isFunction ? column[1](value) : value;
 									const newObject = { [PRIMARY_KEY]: val };
@@ -70,7 +74,7 @@ export function compile(definition) {
 								const parent = nodes[depth];
 
 								if (!parent) {
-									throw new Error(`Could not find object at depth ${depth}.`);
+									throw new Error(`Lego#parse(${columnName}>${propertyName}): Could not find object at depth ${depth}.`);
 								}
 
 								if (parent[relationship]) {
@@ -91,12 +95,10 @@ export function compile(definition) {
 					columns[columnName] = function handler(nodes, value) {
 						const parent = nodes[depth + 1];
 
-						if (!parent) {
-							throw new Error(`Could not find parent at depth ${depth}.`);
+						if (parent) {
+							const val = isFunction ? column[1](value) : value;
+							parent[propertyName] = val;
 						}
-
-						const val = isFunction ? column[1](value) : value;
-						parent[propertyName] = val;
 					};
 				}
 			}

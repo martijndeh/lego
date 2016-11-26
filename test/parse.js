@@ -383,4 +383,47 @@ describe('parse', function () {
 		assert.notEqual(objects[0].category, null);
 		assert.notEqual(objects[1].category, null);
 	});
+
+	it('should set empty array if no items exist', () => {
+		const rows = [{
+			id: 1,
+			child_id: null,
+		}];
+
+		const object = Lego.parse(rows, {
+			id: 'id',
+			children: [{
+				id: 'child_id',
+			}],
+		});
+
+		assert.deepEqual(object, {
+			id: 1,
+			children: [],
+		});
+	});
+
+	it('should not set property if item does not exist', () => {
+		const rows = [{
+			id: '90b3c2f3-e9c9-486c-9eaa-44dbfdcabe34',
+			slug: 'test',
+			item_id: null,
+			quantity: null,
+		}];
+
+		const object = Lego.parse(rows, {
+			id: 'id',
+			slug: 'slug',
+			items: [{
+				id: 'item_id',
+				quantity: 'quantity',
+			}],
+		});
+
+		assert.deepEqual(object, {
+			id: rows[0].id,
+			slug: rows[0].slug,
+			items: [],
+		});
+	});
 });
