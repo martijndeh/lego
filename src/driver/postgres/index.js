@@ -53,7 +53,7 @@ export class PostgresDriver {
 	query(client: PgClient, text: string, parameters: any[]): Promise<number|any[]> {
 		return client.query(text, parameters)
 			.then((result) => {
-				if ((result.oid === 0 || isNaN(result.oid) || result.oid === null) && result.fields.length === 0) {
+				if ((result.oid === 0 || isNaN(result.oid) || result.oid === null) && (!result.fields || result.fields.length === 0)) {
 					return result.rowCount;
 				}
 				else {
