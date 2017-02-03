@@ -22,6 +22,8 @@ export function compile(definition) {
 
 				// TODO: Check if the column already exists. If so, the definition object is invalid.
 
+				// TODO: Merge the primary key branch and the non-primary key branch as they behave
+				// nearly the same now.
 				if (propertyName === PRIMARY_KEY) {
 					if (isArray) {
 						columns[columnName] = function handler(nodes, value) {
@@ -102,6 +104,18 @@ export function compile(definition) {
 						if (parent) {
 							const val = isFunction ? column[1](value) : value;
 							parent[propertyName] = val;
+						}
+						else {
+							const currentNode = nodes[depth];
+
+							// If the relationship was explicitly set to null or an empty array, it
+							// was a primary key-based object and the primary key doesn't exist.
+							if (currentNode && currentNode[relationship] !== null && !Array.isArray(currentNode[relationship])) {
+								// This is a nested object without a primary key. Just set it.
+								const newObject = { [propertyName]: value };
+								currentNode[relationship] = newObject;
+								return [ depth, newObject ];
+							}
 						}
 					};
 				}

@@ -486,4 +486,69 @@ describe('parse', function () {
 			item: null,
 		});
 	});
+
+	it('nested object with 2 properties and no id', function () {
+		const rows = [{
+			id: 1,
+			name: 'Test 1',
+			foo: 'bar',
+		}, {
+			id: 2,
+			name: 'Test 2',
+			foo: 'baz',
+		}];
+
+		const objects = Lego.parse(rows, [{
+			id: 'id',
+			test: {
+				a: 'name',
+				b: 'foo',
+			},
+		}]);
+
+
+		assert.deepEqual(objects, [{
+			id: 1,
+			test: {
+				a: 'Test 1',
+				b: 'bar',
+			},
+		}, {
+			id: 2,
+			test: {
+				a: 'Test 2',
+				b: 'baz',
+			},
+		}]);
+	});
+
+	it('nested object with 1 property and no id', function () {
+		const rows = [{
+			id: 1,
+			name: 'Test 1',
+		}, {
+			id: 2,
+			name: 'Test 2',
+		}];
+
+		const objects = Lego.parse(rows, [{
+			id: 'id',
+			test: {
+				a: 'name',
+			},
+		}]);
+
+
+		assert.deepEqual(objects, [{
+			id: 1,
+			test: {
+				a: 'Test 1',
+			},
+		}, {
+			id: 2,
+			test: {
+				a: 'Test 2',
+			},
+		}]);
+	});
 });
