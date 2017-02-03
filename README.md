@@ -14,12 +14,6 @@ Lego does not do simple string concatenation. Instead, Lego creates parameterize
 SELECT * FROM users WHERE name = $1
 ```
 
-## Breaking changes in 2.x
-
-- `Lego#sql` now memoizes the query's result.
-- Queries in transactions now always get executed in series, in chronological order instead of the returned `Lego#sql` first and then the other queries.
-- The internal API has changed. If you were depending on private methods please review your code.
-
 ## Quick start
 
 Lego uses ES6 template strings. From the template string, a parameterized query is created and passed to the driver. The driver creates a pool of connections with the url from `process.env.DATABASE_URL`.
@@ -115,8 +109,7 @@ Lego.parse(rows, [{
 }]);
 ```
 
-The definition object describes how to map columns and rows to objects. Every property refers to a column
-name.
+The definition object describes how to map columns and rows to objects. Every property refers to a column name.
 
 ```js
 Lego.sql `SELECT
@@ -146,6 +139,8 @@ WHERE
 		//
 	})
 ```
+
+Please have a look at the [parse test cases](https://github.com/martijndeh/lego/blob/master/test/parse.js) to learn more about the different ways to transform rows to objects.
 
 ## Transactions
 
@@ -222,3 +217,7 @@ lego migrate:latest                  Migrates to the latest migration.
 lego migrate:rollback                Rolls back the previous migration.
 lego migrate:<version>               Migrates or rolls back to the target migration <version>.
 ```
+
+## Disable SSL
+
+By default, Lego requires an SSL connection to the database. To disable this, you can set the `LEGO_DISABLE_SSL` environment variable to `false`.
