@@ -7,7 +7,7 @@ import type { PgClient } from './postgres/index.js';
 export { Driver };
 export type { PgClient };
 
-export function createDriver(databaseURL: ?string): Driver {
+export function createDriver(databaseURL: ?string, options: any = {}): Driver {
 	if (!databaseURL) {
 		throw new Error('No DATABASE_URL provided.');
 	}
@@ -18,7 +18,7 @@ export function createDriver(databaseURL: ?string): Driver {
 	switch (parse.protocol) {
 	case 'pg:':
 	case 'postgres:':
-		driver = new Driver(databaseURL);
+		driver = new Driver(databaseURL, options);
 		break;
 	}
 
@@ -33,8 +33,12 @@ let driver = null;
 
 export function getSingleton() {
 	if (driver === null) {
-		const { DATABASE_URL } = process.env;
-		driver = createDriver(DATABASE_URL);
+		const { DATABASE_URL, LEGO_MIN_POOL_SIZE, LEGO_MAX_POOL_SIZE } = process.env;
+
+		driver = createDriver(DATABASE_URL, {
+			min: LEGO_MIN_POOL_SIZE,
+			max: LEGO_MAX_POOL_SIZE,
+		});
 	}
 
 	return driver;

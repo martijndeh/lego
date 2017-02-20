@@ -25,15 +25,16 @@ type PgPool = {
 
 export class PostgresDriver {
 	pool: PgPool;
-	constructor(databaseURL: string) {
-		this.createPool(databaseURL);
+	constructor(databaseURL: string, options: Object) {
+		this.createPool(databaseURL, options);
 	}
 
-	createPool(databaseUrl: string) {
+	createPool(databaseUrl: string, options: Object) {
 		const { auth, hostname, port, pathname } = url.parse(databaseUrl);
 		const [ user, password ] = (auth || '').split(':');
 
 		const config = {
+			...options,
 			user: user,
 			password: password,
 			host: hostname,

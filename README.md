@@ -8,7 +8,7 @@ A lightweight SQL (string) builder using ES6 template strings. Lego embraces SQL
 Lego.sql `SELECT * FROM users WHERE name = ${name}`;
 ```
 
-Lego does not do simple string concatenation. Instead, Lego creates parameterized queries. For example, the following statement is creates from the previous query:
+Lego does not do simple string concatenation. Instead, Lego creates parameterized queries. For example, the following query is created from the previous call:
 
 ```sql
 SELECT * FROM users WHERE name = $1
@@ -51,7 +51,7 @@ if (shouldOrderBy) {
 
 ### Lego#first
 
-Or if you just want to first result from a query (or null if there were not results):
+Or if you just want the first result from a query (or null if there were no results):
 
 ```js
 Lego.sql `SELECT * FROM accounts LIMIT 1`
@@ -218,6 +218,11 @@ lego migrate:rollback                Rolls back the previous migration.
 lego migrate:<version>               Migrates or rolls back to the target migration <version>.
 ```
 
-## Disable SSL
+## Environment variables
 
-By default, Lego requires an SSL connection to the database. To disable this, you can set the `LEGO_DISABLE_SSL` environment variable to `false`.
+Variable | Description
+---------|-------------
+`DATABASE_URL` | The connection string to the database.
+`LEGO_DISABLE_SSL` | By default, Lego requires an SSL connection to the database. To disable this, you can set the `LEGO_DISABLE_SSL` environment variable to `false`.
+`LEGO_MAX_POOL_SIZE` | Sets the maximum pool size. If you don't set the max pool size, the [driver](https://www.npmjs.com/package/pg) sets a default value.
+`LEGO_MIN_POOL_SIZE` | Sets the minimum pool size. If you don't set the min pool size, the [driver](https://www.npmjs.com/package/pg) sets a default value.
