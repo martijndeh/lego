@@ -551,4 +551,84 @@ describe('parse', function () {
 			},
 		}]);
 	});
+
+	it('double nested object without id', function () {
+		const rows = [{
+			id: 1,
+			account_id: 1,
+			latitude: 52,
+			longitude: 7,
+		}];
+
+		const object = Lego.parse(rows, {
+			id: 'id',
+			account: {
+				id: 'account_id',
+			},
+			location: {
+				latitude: 'latitude',
+				longitude: 'longitude',
+			},
+		});
+
+		assert.deepEqual(object, {
+			id: 1,
+			account: {
+				id: 1,
+			},
+			location: {
+				latitude: 52,
+				longitude: 7,
+			},
+		});
+	});
+
+	it('nested object with id', function () {
+		const rows = [{
+			id: 1,
+			account_id: 2,
+			client_id: 3,
+		}];
+
+		const object = Lego.parse(rows, {
+			id: 'id',
+			account: {
+				id: 'account_id',
+			},
+			client: {
+				id: 'client_id',
+			},
+		});
+
+		assert.deepEqual(object, {
+			id: 1,
+			account: {
+				id: 2,
+			},
+			client: {
+				id: 3,
+			},
+		});
+	});
+
+	it('nested object with function', function () {
+		const rows = [{
+			id: 1,
+			value: 2,
+		}];
+
+		const object = Lego.parse(rows, {
+			id: 'id',
+			account: {
+				value: ['value', (value) => value * 2],
+			},
+		});
+
+		assert.deepEqual(object, {
+			id: 1,
+			account: {
+				value: 4,
+			},
+		});
+	});
 });
