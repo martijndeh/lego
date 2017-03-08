@@ -59,7 +59,9 @@ export default class Migrations {
 				}
 			})
 			.catch(function (error) {
-				if (error.code == '42P01') {
+				const relationDoesNotExistErrorCode = '42P01';
+
+				if (error.code === relationDoesNotExistErrorCode || error.sqlState === relationDoesNotExistErrorCode) {
 					return 0;
 				}
 				else {
@@ -105,7 +107,9 @@ export function down(transaction) {
 				created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
 			)`
 			.catch(function (error) {
-				if (error.code == '42P06') {
+				const schemaAlreadyExistsErrorCode = '42P06';
+
+				if (error.code == schemaAlreadyExistsErrorCode || error.sqlState === schemaAlreadyExistsErrorCode) {
 					// The schema already exists. That's fine.
 				}
 				else {
