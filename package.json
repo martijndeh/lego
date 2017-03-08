@@ -8,7 +8,8 @@
     "build": "babel src -d lib",
     "coverage": "istanbul cover _mocha -- --compilers js:babel-register --recursive ./test/*.js",
     "test": "NODE_ENV=test mocha --compilers js:babel-register --reporter spec ./test/*.js",
-    "coveralls": "cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
+    "coveralls": "cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js",
+    "bench": "node bench/simple.js"
   },
   "repository": {
     "type": "git",
@@ -37,6 +38,7 @@
     "coveralls": "^2.11.6",
     "eslint": "^3.8.0",
     "istanbul": "^1.0.0-alpha.2",
+    "microtime": "^2.1.2",
     "mocha": "^2.3.4",
     "mocha-lcov-reporter": "^1.0.0",
     "sinon": "^1.17.2"
