@@ -126,7 +126,7 @@ if(argv._.length) {
 				// Done!
 			})
 			.catch(function (error) {
-				if(error.code === '42601') {
+				if(error.code === '42601' || error.sqlState === '42601') {
 					console.log('');
 					console.log('Error: ' + error.message);
 					console.log('');
