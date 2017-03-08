@@ -61,6 +61,15 @@ Lego.sql `SELECT * FROM accounts LIMIT 1`
 	});
 ```
 
+### Lego#raw
+
+You cannot pass raw values to your queries, unless you use `Lego#raw`. Be very careful not to use this with user input.
+
+```js
+const column = 'name';
+Lego.sql `UPDATE users SET ${Lego.raw(column)} = ${value}`;
+```
+
 ### Return value
 
 `Lego.sql` returns a Promise-like object and the query is executed when `.then(..)` is invoked. The Promise is resolved with the query's result.

@@ -2,6 +2,7 @@
 
 import { getSingleton } from '../driver/index.js';
 import Transaction from '../transaction/index.js';
+import Parameter from './parameter.js';
 
 const PREVENT_EXTRA_SPACE_CHARACTERS = new Set([' ', ')']);
 
@@ -24,85 +25,102 @@ export default class Lego {
 		return this._append(strings, parameters);
 	}
 
-	_append(strings: string[], parameters: any[]) {
-		if (parameters.length) {
-			let i;
-			let il;
+	_pasteString(string: string) {
+		const shouldPreventSpace = PREVENT_EXTRA_SPACE_CHARACTERS.has(string[0]);
 
-			const isAppending = this.query.length > 0;
+		this.query = [
+			...this.query.slice(0, -1),
+			this.query.slice(-1)[0] + (shouldPreventSpace ? '' : ' ') + string,
+		];
+	}
 
-			// If there are parameters we need to check what type every item is. Some types, like
-			// a Lego instance or an array of Lego instances, should be treated differently.
+	_appendNext(index: number, strings: string[], parameters: any[], isAppending: boolean) {
+		const string = strings[index];
+		const parameter = parameters[index];
 
-			for (i = 0, il = parameters.length; i < il; i++) {
-				const string = strings[i];
-				const parameter = parameters[i];
+		if (parameter === void 0 && index >= parameters.length) {
+			// There is always one more string than the number of parameters. So, this is the last
+			// string which we just need to add now.
+			this.query.push(string);
+		}
+		else if (parameter instanceof Parameter) {
+			// TODO: Check the parameter's type. Currently only "raw" is supported.
 
-				if (parameter instanceof Lego) {
-					this.query.push(string + parameter.query[0], ...parameter.query.slice(1));
-					this.parameters.push(...parameter.parameters);
-				}
-				else if (Array.isArray(parameter) && parameter.length && parameter[0] instanceof Lego) {
-					let j;
-					let jl;
-
-					let first = string;
-
-					for (j = 0, jl = parameter.length; j < jl; j++) {
-						const lego = parameter[j];
-						this.query.push(first + lego.query[0], ...lego.query.slice(1, -1));
-
-						if (lego.query.length > 1) {
-							if (j + 1 < jl) {
-								first = lego.query.slice(-1) + ', ';
-							}
-							else {
-								first = lego.query.slice(-1);
-							}
-						}
-						else {
-							first = null;
-						}
-
-						this.parameters.push(...lego.parameters);
-					}
-
-					if (first) {
-						this.query.push(first);
-					}
-				}
-				else {
-					if (isAppending) {
-						const shouldPreventSpace = PREVENT_EXTRA_SPACE_CHARACTERS.has(string[0]);
-
-						// TODO: Pop and add a new value instead?
-
-						this.query = [
-							...this.query.slice(0, -1),
-							this.query.slice(-1)[0] + (shouldPreventSpace ? '' : ' ') + string,
-							'',
-						];
-					}
-					else {
-						this.query.push(string);
-					}
-
-					this.parameters.push(parameter);
-				}
+			if (this.query.length > 0) {
+				this._pasteString(string + String(parameter.value));
+			}
+			else {
+				this.query.push(string + String(parameter.value));
 			}
 
-			const string = strings[i];
-			this.query.push(string);
+			// We add the next string, but we make sure it gets appended to this string.
+			this._appendNext(index + 1, strings, parameters, true);
+		}
+		else {
+			if (parameter instanceof Lego) {
+				this.query.push(string + parameter.query[0], ...parameter.query.slice(1));
+				this.parameters.push(...parameter.parameters);
+			}
+			else if (Array.isArray(parameter) && parameter.length > 0 && parameter[0] instanceof Lego) {
+				// This assumes this is an array of Lego instances.
+
+				let j;
+				let jl;
+
+				let first = string;
+
+				for (j = 0, jl = parameter.length; j < jl; j++) {
+					const lego = parameter[j];
+					this.query.push(first + lego.query[0], ...lego.query.slice(1, -1));
+
+					if (lego.query.length > 1) {
+						if (j + 1 < jl) {
+							first = lego.query.slice(-1) + ', ';
+						}
+						else {
+							first = lego.query.slice(-1);
+						}
+					}
+					else {
+						first = null;
+					}
+
+					this.parameters.push(...lego.parameters);
+				}
+
+				if (first) {
+					this.query.push(first);
+				}
+			}
+			else {
+				if (isAppending) {
+					this._pasteString(string);
+					this.query.push('');
+				}
+				else {
+					this.query.push(string);
+				}
+
+				this.parameters.push(parameter);
+			}
+
+			// And we continue!
+			this._appendNext(index + 1, strings, parameters, isAppending);
+		}
+	}
+
+	_append(strings: string[], parameters: any[]) {
+		if (parameters.length) {
+			const isAppending = this.query.length > 0;
+			this._appendNext(0, strings, parameters, isAppending);
 		}
 		else {
 			if (this.query.length) {
 				// TODO: Pop and add a new value instead?
 
-				this.query = [
-					...this.query.slice(0, -1),
-					this.query.slice(-1)[0] + ' ' + strings[0],
-					...strings.slice(1),
-				];
+				this._pasteString(strings[0]);
+				this.query.push(...strings.slice(1));
+
 				this.parameters.push(...parameters);
 			}
 			else {
@@ -125,7 +143,7 @@ export default class Lego {
 	first() {
 		return this.exec()
 			.then(function (rows) {
-				if (rows && rows.length) {
+				if (rows && rows.length > 0) {
 					return rows[0];
 				}
 				else {
@@ -160,7 +178,6 @@ export default class Lego {
 			text.push(query[i]);
 
 			if (i + 1 < il && i < numberOfParameters) {
-				// TODO: Change this to i + 1?
 				text.push(`$${index++}`);
 			}
 		}

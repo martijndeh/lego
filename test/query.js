@@ -151,4 +151,27 @@ describe('query', function () {
 		});
 	});
 
+	describe('Lego#raw', () => {
+		it('add 1 raw value', () => {
+			const column = 'name';
+			const value = 'Martijn';
+
+			const lego = Lego.sql `SELECT * FROM tests WHERE ${Lego.raw(column)} = ${value}`;
+
+			const query = lego.toQuery();
+			assert.equal(query.text, 'SELECT * FROM tests WHERE name = $1');
+			assert.deepEqual(query.parameters, [value]);
+		});
+
+		it('add 2 raw values', () => {
+			const column = 'name';
+			const value = 'Martijn';
+
+			const lego = Lego.sql `SELECT * FROM tests WHERE ${Lego.raw(column)} = ${value} AND ${Lego.raw(column)} <> ${value}`;
+
+			const query = lego.toQuery();
+			assert.equal(query.text, 'SELECT * FROM tests WHERE name = $1 AND name <> $2');
+			assert.deepEqual(query.parameters, [value, value]);
+		});
+	});
 });
