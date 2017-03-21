@@ -67,10 +67,6 @@ export default class Transaction {
 	}
 
 	execAll() {
-		if (this.queue.length === 0) {
-			return Promise.reject(new Error('0 queries were found in Lego#transaction\'s callback.'));
-		}
-
 		let result = Promise.resolve(true);
 
 		this.queue.forEach((lego) => {
@@ -92,10 +88,21 @@ export function createTransaction(callback: TransactionCallback) {
 			const returnValue = callback(transaction);
 
 			if (!returnValue || !returnValue.then) {
+				if (transaction.numberOfPendingQueries() === 0) {
+					return Promise.reject(new Error('0 queries were found in Lego#transaction\'s callback.'));
+				}
+
 				return transaction.execAll();
 			}
 			else {
+				// We need to handle the different passes: once the transaction callback returns, some
+				// queries may have been queued. We execute the queued queries.
 				return transaction.execAll()
+					.then(() => returnValue)
+					// Then we continue with the return value, which is a promise. After the promise,
+					// new queries may be queued. We wait to resolve the promise and again execute
+					// any queued queries. Previous queries were cleared by the
+					.then(() => transaction.execAll())
 					.then(() => {
 						return returnValue;
 					});
