@@ -3,6 +3,39 @@ import Lego from '../src';
 import assert from 'assert';
 
 describe('query', function () {
+	it.only('test', () => {
+		const id = 1;
+		const params = {
+			age: 10,
+		};
+
+		const lego = Lego.sql `UPDATE users SET ${Object.keys(params).map(key => Lego.sql `age = ${params[key]}`)} WHERE id = ${id}`;
+		const query = lego.toQuery();
+
+		assert.equal(query.text, 'UPDATE users SET age = $1 WHERE id = $2');
+	});
+
+/*
+	it('test', () => {
+		const params = {
+			age: 10,
+			name: 'Bob',
+		};
+		const lego = Lego.sql `UPDATE users SET`;
+
+		Object.keys(params).forEach((key, index) => {
+			if (index > 0) {
+				lego.append ` AND `;
+			}
+
+			lego.append `${Lego.raw(key)} = ${params[key]}`;
+		});
+
+		const query = lego.toQuery();
+		assert.equal(query.text, 'UPDATE users SET age = $1name = $2');
+	});
+*/
+
 	it('without parameters', function () {
 		const lego = Lego.sql `SELECT * FROM users`;
 

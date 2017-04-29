@@ -1,50 +1,55 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 import Lego from '../index.js';
 
 const zeroPad = function (number, base) {
-	const length = (String(base).length - String(number).length) + 1;
-	return length > 0 ? new Array(length).join('0') + number : number;
+	const length = String(base).length - String(number).length + 1;
+	return new Array(length).join('0') + number;
 };
 
 export default class Migrations {
-	static getCurrentVersion() {
-		return new Promise(function (resolve, reject) {
-			fs.readdir(path.join(process.cwd(), 'migrations'), function (error, files) {
+	static getMigrationFileNames() {
+		return new Promise((resolve, reject) => {
+			fs.readdir(path.join(process.cwd(), 'migrations'), function (error, fileNames) {
 				if (error) {
 					if (error.errno === -2) {
 						// The directory does not exist.
-						resolve(0);
+						resolve([]);
 					}
 					else {
 						reject(error);
 					}
 				}
 				else {
-					const currentVersion = files
-						.map(function (fileName) {
-							const baseName = path.basename(fileName);
-							const matches = baseName.match(/^([0-9]+).*\.js$/);
-
-							if (matches && matches.length > 1) {
-								return parseInt(matches[1]);
-							}
-							else {
-								reject(new Error('Unknown file `' + baseName + '` in migrations folder.'));
-							}
-						})
-						.reduce(function (current, value) {
-							if (value > current) {
-								return value;
-							}
-							else {
-								return current;
-							}
-						}, 0);
-					resolve(currentVersion);
+					resolve(fileNames);
 				}
 			});
 		});
+	}
+
+	static async getCurrentVersion() {
+		const migrationFileNames = await this.getMigrationFileNames();
+
+		return migrationFileNames
+			.map(function (fileName) {
+				const baseName = path.basename(fileName);
+				const matches = baseName.match(/^([0-9]+).*\.js$/);
+
+				if (matches && matches.length > 1) {
+					return parseInt(matches[1]);
+				}
+				else {
+					return 0;
+				}
+			})
+			.reduce(function (current, value) {
+				if (value > current) {
+					return value;
+				}
+				else {
+					return current;
+				}
+			}, 0);
 	}
 
 	static getDatabaseVersion() {
@@ -70,7 +75,7 @@ export default class Migrations {
 			});
 	}
 
-	static createMigration(version) {
+	static writeMigration(version, up, down) {
 		return new Promise(function (resolve, reject) {
 			let migrationsDir = path.join(process.cwd(), 'migrations');
 			fs.mkdir(migrationsDir, function (error) {
@@ -81,12 +86,13 @@ export default class Migrations {
 					const versionString = zeroPad(version, 100);
 					const fileName = versionString + '.js';
 					fs.writeFile(path.join(migrationsDir, versionString + '.js'), `export function up(transaction) {
-	//
+${up}
 }
 
 export function down(transaction) {
-	//
-}`,
+${down}
+}
+`,
 					function (error) {
 						if (error) {
 							reject(error);
@@ -98,6 +104,10 @@ export function down(transaction) {
 				}
 			});
 		});
+	}
+
+	static createMigration(version) {
+		return this.writeMigration(version, '	//', '	//');
 	}
 
 	static createMigrationsTable() {

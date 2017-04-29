@@ -129,7 +129,7 @@ export function compile(definition) {
 									return [ depth, newObject ];
 								}
 								else {
-									// console.log('Nothing we can set');
+									
 								}
 							}
 						}

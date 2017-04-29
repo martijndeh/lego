@@ -5,6 +5,7 @@ import path from 'path';
 import Migrations from '../migrations/index.js';
 import { setPoolIdleTimeout } from '../driver/postgres/index.js';
 import chalk from 'chalk';
+import generateMigration from '../schema/index.js';
 
 setPoolIdleTimeout(500);
 
@@ -18,9 +19,32 @@ function _show(message) {
 	return message + _space(32 - message.length);
 }
 
+// TODO: Add tabs in front of the query.
+
 const commandMaps = {
 	'migrate:make': {
-		description: 'Creates a new migration file.',
+		description: 'Generates a new migration file based on changes in your schema.',
+		action: async () => {
+			const migrationFileNames = await Migrations.getMigrationFileNames();
+
+			const migration = await generateMigration(migrationFileNames);
+
+			if (migration.up.length > 0) {
+				const version = await Migrations.getCurrentVersion();
+
+				Migrations.writeMigration(
+					version + 1,
+					migration.up.map((sql) => `\ttransaction.sql \`${sql}\`;`).join('\n'),
+					migration.down.map((sql) => `\ttransaction.sql \`${sql}\`;`).join('\n'),
+				);
+			}
+			else {
+				console.log(chalk.bgGreen('There are no schema changes.'));
+			}
+		},
+	},
+	'migrate:empty': {
+		description: 'Creates an empty migration file.',
 		action: function () {
 			return Migrations.getCurrentVersion()
 				.then(function (version) {
@@ -35,7 +59,7 @@ const commandMaps = {
 				.then(function (localVersion) {
 					if (localVersion === 0) {
 						// We're done. We don't have any Migrations.
-						console.log(chalk.bgGreen('There are 0 local Migrations.'));
+						console.log(chalk.bgGreen('There are 0 local migrations.'));
 					}
 					else {
 						return Migrations.getDatabaseVersion()

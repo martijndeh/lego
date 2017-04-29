@@ -84,9 +84,12 @@ describe('transaction', function () {
 				return transaction.sql `UPDATE tests SET value = 2 WHERE value = 1`;
 			})
 			.then(() => {
-				return Lego.sql `SELECT * FROM tests`.first();
+				return Lego.sql `SELECT * FROM tests`;
 			})
-			.then((test) => {
+			.then((tests) => {
+				assert.equal(tests.length, 1);
+
+				const [ test ] = tests;
 				assert.equal(test.value, 2);
 				assert.equal(test.text, 'Martijn');
 			});
