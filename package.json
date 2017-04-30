@@ -39,7 +39,6 @@
     "eslint": "^3.8.0",
     "istanbul": "^1.0.0-alpha.2",
     "knex": "^0.12.7",
-    "microtime": "^2.1.2",
     "mocha": "^2.3.4",
     "mocha-lcov-reporter": "^1.0.0",
     "sinon": "^1.17.2"

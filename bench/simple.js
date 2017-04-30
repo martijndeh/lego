@@ -1,6 +1,12 @@
 const Lego = require('../').default;
 const microtime = require('microtime');
 
+if (!microtime) {
+	// TODO: Make sure microtime also works in Node 4, or remove Node 4 as target.
+
+	console.log('Microtime dependency is not available. Please add it.');
+}
+
 function simple_query() {
 	const name = 'Martijn';
 	const query = Lego.sql `SELECT * FROM users WHERE name = ${name}`;
