@@ -4,7 +4,7 @@ import { getSingleton } from '../driver/index.js';
 import Transaction from '../transaction/index.js';
 import Parameter from './parameter.js';
 
-const PREVENT_EXTRA_SPACE_CHARACTERS = new Set([' ', ')']);
+const PREVENT_EXTRA_SPACE_CHARACTERS = new Set([' ', ')', ',']);
 
 export default class Lego {
 	transaction: ?Transaction;
@@ -71,14 +71,15 @@ export default class Lego {
 
 				for (j = 0, jl = parameter.length; j < jl; j++) {
 					const lego = parameter[j];
+
 					this.query.push(first + lego.query[0], ...lego.query.slice(1, -1));
 
 					if (lego.query.length > 1) {
 						if (j + 1 < jl) {
-							first = lego.query.slice(-1) + ', ';
+							first = lego.query.slice(-1)[0] + ', ';
 						}
 						else {
-							first = lego.query.slice(-1);
+							first = lego.query.slice(-1)[0];
 						}
 					}
 					else {
@@ -95,7 +96,11 @@ export default class Lego {
 			else {
 				if (isAppending) {
 					this._pasteString(string);
-					this.query.push('');
+
+					// Only add an empty string if this is not the second to last string.
+					if (index !== parameters.length - 1) {
+						this.query.push('');
+					}
 				}
 				else {
 					this.query.push(string);

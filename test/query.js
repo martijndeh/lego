@@ -106,6 +106,29 @@ describe('query', function () {
 			assert.equal(query.text, 'SELECT * FROM tests WHERE name = $1 AND age <> ($2) AND gender = $3 AND role = $4');
 			assert.deepEqual(query.parameters, [name, age, gender, role]);
 		});
+
+		it('append with array and raw', () => {
+			const id = 1;
+			const params = {
+				age: 10,
+				name: 'Bob',
+			};
+			const lego = Lego.sql `UPDATE users SET`;
+
+			Object.keys(params).forEach((key, index) => {
+				if (index > 0) {
+					lego.append `,`;
+				}
+
+				lego.append `${Lego.raw(key)} = ${params[key]}`;
+			});
+
+			lego.append `WHERE id = ${id}`;
+
+			const query = lego.toQuery();
+
+			assert.equal(query.text, 'UPDATE users SET age = $1, name = $2 WHERE id = $3');
+		});
 	});
 
 	describe('sub instances', () => {
@@ -172,6 +195,21 @@ describe('query', function () {
 			const query = lego.toQuery();
 			assert.equal(query.text, 'SELECT * FROM tests WHERE name = $1 AND name <> $2');
 			assert.deepEqual(query.parameters, [value, value]);
+		});
+	});
+
+	describe('array', () => {
+		it('array before regular parameter', () => {
+			const id = 1;
+			const params = {
+				age: 10,
+				name: 'Bob',
+			};
+
+			const lego = Lego.sql `UPDATE users SET ${Object.keys(params).map(key => Lego.sql `${Lego.raw(key)} = ${params[key]}`)} WHERE id = ${id}`;
+			const query = lego.toQuery();
+
+			assert.equal(query.text, 'UPDATE users SET age = $1, name = $2 WHERE id = $3');
 		});
 	});
 });
