@@ -211,5 +211,19 @@ describe('query', function () {
 
 			assert.equal(query.text, 'UPDATE users SET age = $1, name = $2 WHERE id = $3');
 		});
+
+		it('array after regular parameter', () => {
+			const id = 1;
+			const params = {
+				age: 10,
+				name: 'Bob',
+			};
+      const keys = Object.keys(params);
+
+			const lego = Lego.sql `INSERT INTO users (${Lego.raw(keys.join(','))}) VALUES (${keys.map(key => Lego.sql `${params[key]}`)})`;
+			const query = lego.toQuery();
+
+			assert.equal(query.text, 'INSERT INTO users (age,name) VALUES ($1, $2)');
+		});
 	});
 });
