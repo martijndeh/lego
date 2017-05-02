@@ -199,17 +199,39 @@ describe('query', function () {
 	});
 
 	describe('array', () => {
+		const params = {
+			age: 10,
+			name: 'Bob',
+		};
+		const keys = Object.keys(params);
+
 		it('array before regular parameter', () => {
 			const id = 1;
-			const params = {
-				age: 10,
-				name: 'Bob',
-			};
-
-			const lego = Lego.sql `UPDATE users SET ${Object.keys(params).map(key => Lego.sql `${Lego.raw(key)} = ${params[key]}`)} WHERE id = ${id}`;
+			const lego = Lego.sql `UPDATE users SET ${keys.map(key => Lego.sql `${Lego.raw(key)} = ${params[key]}`)} WHERE id = ${id}`;
 			const query = lego.toQuery();
 
 			assert.equal(query.text, 'UPDATE users SET age = $1, name = $2 WHERE id = $3');
+		});
+
+		it('array after regular parameter', () => {
+			const lego = Lego.sql `INSERT INTO users (${Lego.raw(keys.join(', '))}) VALUES (${keys.map(key => Lego.sql `${params[key]}`)})`;
+			const query = lego.toQuery();
+
+			assert.equal(query.text, 'INSERT INTO users (age, name) VALUES ($1, $2)');
+		});
+
+		it('array after array', () => {
+			const lego = Lego.sql `INSERT INTO users (${Lego.raw(keys.join(', '))}) VALUES (${keys.map(key => Lego.sql `${params[key]}`)}), (${keys.map(key => Lego.sql `${params[key]}`)})`;
+			const query = lego.toQuery();
+
+			assert.equal(query.text, 'INSERT INTO users (age, name) VALUES ($1, $2), ($3, $4)');
+		});
+
+		it('array after array before regular parameter', () => {
+			const lego = Lego.sql `INSERT INTO users (${Lego.raw(keys.join(', '))}) VALUES (${keys.map(key => Lego.sql `${params[key]}`)}), (${keys.map(key => Lego.sql `${params[key]}`)}) ON CONFLICT DO UPDATE SET ${Lego.raw('age')} = ${params.age}`;
+			const query = lego.toQuery();
+
+			assert.equal(query.text, 'INSERT INTO users (age, name) VALUES ($1, $2), ($3, $4) ON CONFLICT DO UPDATE SET age = $5');
 		});
 	});
 });

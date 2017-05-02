@@ -72,7 +72,13 @@ export default class Lego {
 				for (j = 0, jl = parameter.length; j < jl; j++) {
 					const lego = parameter[j];
 
-					this.query.push(first + lego.query[0], ...lego.query.slice(1, -1));
+					if (isAppending) {
+						this._pasteString(first + lego.query[0]);
+						this.query.push(...lego.query.slice(1, -1), '');
+					}
+					else {
+						this.query.push(first + lego.query[0], ...lego.query.slice(1, -1));
+					}
 
 					if (lego.query.length > 1) {
 						if (j + 1 < jl) {
