@@ -115,6 +115,13 @@ export default class Lego {
 			});
 	}
 
+	parse(definition) {
+		return this.execute()
+			.then((rows) => {
+				return parse(rows, definition);
+			});
+	}
+
 	transacting(transaction: Transaction) {
 		this.setTransaction(transaction);
 	}
