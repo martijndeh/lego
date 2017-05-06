@@ -2,7 +2,7 @@ import { createTransaction } from './transaction/index.js';
 import type { TransactionCallback } from './transaction/index.js';
 import parse, { compile } from './parse/index.js';
 import Lego from './lego/index.js';
-import Parameter from './lego/parameter.js';
+import RawToken from './lego/tokens/raw-token.js';
 
 export default {
 	sql: (strings: string[], ...parameters: any[]) => {
@@ -26,6 +26,6 @@ export default {
 	},
 
 	raw: (value) => {
-		return new Parameter('raw', value);
+		return new RawToken(value);
 	},
 };
