@@ -49,18 +49,6 @@ if (shouldOrderBy) {
 }
 ```
 
-### Lego#first
-
-Or if you just want the first result from a query (or null if there were no results):
-
-```js
-Lego.sql `SELECT * FROM accounts LIMIT 1`
-	.first()
-	.then((account) => {
-		// account is the first row from the query, or null if no rows were found.
-	});
-```
-
 ### Lego#raw
 
 You cannot pass raw values to your queries, unless you use `Lego#raw`. Be very careful not to use this with user input.
@@ -118,10 +106,10 @@ Lego.parse(rows, [{
 }]);
 ```
 
-The definition object describes how to map columns and rows to objects. Every property refers to a column name.
+The definition object describes how to map columns and rows to objects. Every property refers to a column name. You can also call `.parse(..)` on a Lego object directly.
 
 ```js
-Lego.sql `SELECT
+const project = await Lego.sql `SELECT
 	projects.id,
 	projects.created_at,
 	project_members.id member_id,
@@ -132,24 +120,31 @@ FROM projects
 INNER JOIN project_members ON projects.id = project_members.project_id
 WHERE
 	projects.id = ${projectID}`
-	.then((rows) => {
-		return Lego.parse(rows, {
-			id: 'id',
-			createdAt: 'created_at',
-			members: [{
-				id: 'member_id',
-				name: 'member_name',
-				email: 'member_email',
-				joinedAt: 'member_joined_at'
-			}]
-		})
-	})
-	.then((project) => {
-		//
-	})
+	.parse(rows, {
+		id: 'id',
+		createdAt: 'created_at',
+		members: [{
+			id: 'member_id',
+			name: 'member_name',
+			email: 'member_email',
+			joinedAt: 'member_joined_at'
+		}]
+	});
 ```
 
 Please have a look at the [parse test cases](https://github.com/martijndeh/lego/blob/master/test/parse.js) to learn more about the different ways to transform rows to objects.
+
+### Lego#first
+
+Or if you just want the first result from a query (or null if there were no results):
+
+```js
+Lego.sql `SELECT * FROM accounts LIMIT 1`
+	.first()
+	.then((account) => {
+		// account is the first row from the query, or null if no rows were found.
+	});
+```
 
 ## Transactions
 
