@@ -70,7 +70,7 @@ export default class Transaction {
 		let result = Promise.resolve(true);
 
 		this.queue.forEach((lego) => {
-			result = result.then(() => lego.exec());
+			result = result.then(() => lego.execute());
 		});
 		this.queue = [];
 
