@@ -1,5 +1,6 @@
 import Lego from '../src';
 import assert from 'assert';
+import { compile } from '../src/parse/index.js';
 
 describe('parse', function () {
 	it('simple rows', function () {
@@ -382,6 +383,27 @@ describe('parse', function () {
 
 		assert.notEqual(objects[0].category, null);
 		assert.notEqual(objects[1].category, null);
+	});
+
+	it('should set empty array if there are no rows', () => {
+		const rows = [];
+		const objects = Lego.parse(rows, [{
+			'id': 'id',
+		}]);
+
+		assert.deepEqual(objects, []);
+	});
+
+	it('should return the same results when using the compiler multiple times', () => {
+		const rows = [{
+			id: 1,
+		}];
+
+		const compiler = compile([{
+			id: 'id',
+		}]);
+
+		assert.deepEqual(compiler(rows), compiler(rows));
 	});
 
 	it('should set empty array if no items exist', () => {

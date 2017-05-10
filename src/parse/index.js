@@ -144,11 +144,16 @@ export function compile(definition) {
 	}
 
 	const flag = 'root';
+	const initialValue = Array.isArray(definition)
+		? []
+		: null;
 
 	parseColumn(definition, flag, 0);
 
 	return function (rows) {
-		let root = {};
+		let root = {
+			[flag]: initialValue,
+		};
 
 		rows.forEach((row) => {
 			const nodes = [root];
