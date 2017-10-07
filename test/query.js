@@ -3,17 +3,55 @@ import Lego from '../src';
 import assert from 'assert';
 
 describe('query', function () {
-	it('no spaces when using ( and )', () => {
-		const test = 123;
-		const lego = Lego.sql `INSERT INTO foo (test) VALUES (`;
-		lego.append `${test}`;
-		lego.append `)`;
+	describe('spaces', () => {
+		it('no space after (, before )', () => {
+			const test = 123;
+			const lego = Lego.sql `INSERT INTO foo (test) VALUES (`;
+			lego.append `${test}`;
+			lego.append `)`;
 
-		const query = lego.toQuery();
+			const query = lego.toQuery();
 
-		assert.deepEqual(query, {
-			text: 'INSERT INTO foo (test) VALUES ($1)',
-			parameters: [test],
+			assert.deepEqual(query, {
+				text: 'INSERT INTO foo (test) VALUES ($1)',
+				parameters: [test],
+			});
+		});
+
+		it('space between regular words', () => {
+			const lego = Lego.sql `INSERT INTO foo`;
+			lego.append `DEFAULT VALUES`;
+
+			const query = lego.toQuery();
+			assert.deepEqual(query, {
+				text: 'INSERT INTO foo DEFAULT VALUES',
+				parameters: [],
+			});
+		});
+
+		it('space before (', () => {
+			const name = 'Martijn';
+			const lego = Lego.sql `INSERT INTO foo`;
+			lego.append `(name) VALUES (${name})`;
+
+			const query = lego.toQuery();
+			assert.deepEqual(query, {
+				text: 'INSERT INTO foo (name) VALUES ($1)',
+				parameters: [name],
+			});
+		});
+
+		it('space after )', () => {
+			const name = 'Martijn';
+			const lego = Lego.sql `SELECT * FROM test INNER JOIN foo ON (test.id = foo.test_id)`;
+			lego.append `WHERE test.name = ${name}`;
+
+			const query = lego.toQuery();
+
+			assert.deepEqual(query, {
+				text: 'SELECT * FROM test INNER JOIN foo ON (test.id = foo.test_id) WHERE test.name = $1',
+				parameters: [name],
+			});
 		});
 	});
 

@@ -8,8 +8,8 @@ import Token from './tokens/token.js';
 import StringToken from './tokens/string-token.js';
 import ParameterToken from './tokens/parameter-token.js';
 
-const PREVENT_EXTRA_SPACE_CHARACTERS_INPUT = new Set([' ', ')', '(', ',']);
-const PREVENT_EXTRA_SPACE_CHARACTERS_TOKENS = new Set([' ', ')', '(']);
+const PREVENT_EXTRA_SPACE_CHARACTERS_INPUT = new Set([' ', ')', ',']);
+const PREVENT_EXTRA_SPACE_CHARACTERS_TOKENS = new Set([' ', '(']);
 
 export default class Lego {
 	transaction: ?Transaction = null;
