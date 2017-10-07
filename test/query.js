@@ -3,6 +3,20 @@ import Lego from '../src';
 import assert from 'assert';
 
 describe('query', function () {
+	it('no spaces when using ( and )', () => {
+		const test = 123;
+		const lego = Lego.sql `INSERT INTO foo (test) VALUES (`;
+		lego.append `${test}`;
+		lego.append `)`;
+
+		const query = lego.toQuery();
+
+		assert.deepEqual(query, {
+			text: 'INSERT INTO foo (test) VALUES ($1)',
+			parameters: [test],
+		});
+	});
+
 	it('without parameters', function () {
 		const lego = Lego.sql `SELECT * FROM users`;
 

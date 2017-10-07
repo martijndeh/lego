@@ -8,7 +8,8 @@ import Token from './tokens/token.js';
 import StringToken from './tokens/string-token.js';
 import ParameterToken from './tokens/parameter-token.js';
 
-const PREVENT_EXTRA_SPACE_CHARACTERS = new Set([' ', ')', ',']);
+const PREVENT_EXTRA_SPACE_CHARACTERS_INPUT = new Set([' ', ')', '(', ',']);
+const PREVENT_EXTRA_SPACE_CHARACTERS_TOKENS = new Set([' ', ')', '(']);
 
 export default class Lego {
 	transaction: ?Transaction = null;
@@ -20,7 +21,7 @@ export default class Lego {
 	}
 
 	append(strings: string[], ...parameters: any[]) {
-		if (strings.length > 0 && !PREVENT_EXTRA_SPACE_CHARACTERS.has(strings[0][0])) {
+		if (strings.length > 0 && !PREVENT_EXTRA_SPACE_CHARACTERS_INPUT.has(strings[0][0]) && this.shouldAddSpace()) {
 			this.tokens.push(new StringToken(' '));
 		}
 
@@ -42,7 +43,8 @@ export default class Lego {
 			const [
 				text,
 			] = state.text;
-			return text.slice(-1) !== ' ';
+
+			return !PREVENT_EXTRA_SPACE_CHARACTERS_TOKENS.has(text.slice(-1));
 		}
 		else {
 			return false;
@@ -66,7 +68,7 @@ export default class Lego {
 						token,
 					] = lego.tokens;
 
-					if (this.shouldAddSpace() && token && token.string && !PREVENT_EXTRA_SPACE_CHARACTERS.has(token.string[0])) {
+					if (this.shouldAddSpace() && token && token.string && !PREVENT_EXTRA_SPACE_CHARACTERS_INPUT.has(token.string[0])) {
 						this.tokens.push(new StringToken(' '));
 					}
 
