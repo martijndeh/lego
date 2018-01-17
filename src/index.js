@@ -29,3 +29,5 @@ export default {
 		return new RawToken(value);
 	},
 };
+
+export { default as Token } from './lego/tokens/token.js';
